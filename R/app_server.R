@@ -84,6 +84,8 @@ app_server <- function(input, output, session) {
         )
     })
 
+
+    #### Data userinterface
     output$ui_data <- shiny::renderUI({
         possible_data_types <- c("qs", "rds/rda/rData", "csv", "clipboard")
         shiny::wellPanel(
@@ -123,9 +125,8 @@ app_server <- function(input, output, session) {
         )
     })
 
-
     current_data <- reactiveVal()
-    current_data_long <- reactiveVal()
+    current_data(glehr2023_cd4_cd8_relative[, -1])
     toListen <- reactive({
         list(
             input$uploadfile,
@@ -168,6 +169,117 @@ app_server <- function(input, output, session) {
         if (length(input$selected_data_type) == 0) {
             return()
         }
+        current_data()[, seq_len(min(ncol(current_data()), 6))]
+    })
+    output$data_preview_full <- DT::renderDT({
+        if (length(input$selected_data_type) == 0) {
+            return()
+        }
         current_data()
+    })
+
+    #### Restriction userinterface
+    all_cols <- reactive({
+        colnames(current_data())
+    })
+
+    output$ui_rroc <- shiny::renderUI({
+        shiny::wellPanel(
+            selectInput(
+                inputId = "dependent_vars",
+                label = "Dependent variables:",
+                choices = all_cols(),
+                selected = input$dependent_vars,
+                multiple = TRUE,
+                size = min(10, length(all_cols())),
+                selectize = FALSE
+            ),
+            selectInput(
+                inputId = "independent_vars",
+                label = "Independent variables:",
+                choices = all_cols()[!all_cols() %in% input$dependent_vars],
+                selected = all_cols()[!all_cols() %in% input$dependent_vars],
+                multiple = TRUE,
+                size = min(10, length(all_cols())),
+                selectize = FALSE
+            ),
+            numericInput(
+                inputId = "n_permutations",
+                label = "Number of permutations:",
+                value = 4, min = 0, max = 1000, step = 1
+            ),
+            selectInput(
+                inputId = "positive_label",
+                label = "Positive label:",
+                choices = possible_positive_labels(),
+                selected = "group_A"
+            ),
+            actionButton("run_rroc", "Run restriction", icon = icon("play", verify_fa = FALSE))
+        )
+    })
+    rroc_result <- reactiveVal()
+    output$rroc_plot <- renderPlot({
+        dv <- input$dependent_vars
+        iv <- input$independent_vars
+        if (
+            is.null(rroc_result()) || is.null(dv) || is.null(iv) ||
+                !dv[1] %in% names(rroc_result()) ||
+                !iv[1] %in% names(rroc_result()[[dv[1]]])) {
+            # Then return a plot that says "No data"
+            print("No data")
+            return(ggplot2::ggplot() +
+                ggplot2::annotate(
+                    "text",
+                    x = 0.5, y = 0.5,
+                    label = "Restriction not calculated for this variable",
+                    size = 10
+                ) +
+                ggplot2::theme_void())
+        } else {
+            return(rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]])
+        }
+    })
+    observeEvent(input$dependent_vars, {
+        print(input$dependent_vars)
+    })
+    possible_positive_labels <- reactive({
+        if (length(input$dependent_vars) != 1) {
+            return(NULL)
+        } else {
+            return(unique(current_data()[[input$dependent_vars]]))
+        }
+    })
+    observeEvent(input$run_rroc, {
+        dv <- input$dependent_vars
+        iv <- input$independent_vars
+        rroc_res_tmp <- restrictedROC::rROC(
+            x = current_data(),
+            dependent_vars = input$dependent_vars,
+            independent_vars = input$independent_vars,
+            do_plots = TRUE,
+            n_permutations = input$n_permutations,
+            positive_label = input$positive_label,
+            parallel_permutations = FALSE
+        )
+        if (is.null(rroc_result())) {
+            rroc_result(rroc_res_tmp)
+        } else {
+            old_rroc <- rroc_result()
+            for (dv_x in unique(names(old_rroc), names(rroc_res_tmp))) {
+                if (!dv_x %in% names(rroc_res_tmp)) {
+                    next
+                }
+                for (iv_x in unique(names(old_rroc[[dv_x]]), names(rroc_res_tmp[[dv_x]]))) {
+                    if (iv_x %in% names(rroc_res_tmp[[dv_x]])) {
+                        old_rroc[[dv_x]][[iv_x]] <- rroc_res_tmp[[dv_x]][[iv_x]]
+                    }
+                }
+            }
+            # Update the reactive value
+            rroc_result(old_rroc)
+        }
+
+        output$restriction_plot <- renderPlot(rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]])
+        output$restriction_performances <- DT::renderDT(restrictedROC:::summary.rROC(rroc_result()))
     })
 }

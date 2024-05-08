@@ -9,23 +9,37 @@ app_ui <- function(request) {
         # Leave this function for adding external resources
         # golem_add_external_resources(),
         fluidPage(
-            sidebarLayout(
-                sidebarPanel(
-                    uiOutput("ui_data")
-                ),
-                mainPanel(
-                    tabsetPanel(
-                        id = "tabs_data",
-                        tabPanel(
-                            "View",
-                            DT::DTOutput("data_preview")
-                        ),
-                        tabPanel(
-                            "Restriction",
+            tabsetPanel(
+                id = "tabs_data",
+                tabPanel(
+                    "Restriction",
+                    sidebarLayout(
+                        sidebarPanel(uiOutput("ui_rroc")),
+                        mainPanel(
                             tabPanel(
-                                "Text",
-                                h2("A Random Text"),
-                                tableOutput("text")
+                                "Plot",
+                                h2("Restriction"),
+                                plotOutput("rroc_plot"),
+                                DT::DTOutput("restriction_performances")
+                            )
+                        )
+                    )
+                ),
+                tabPanel(
+                    "New Data",
+                    sidebarLayout(
+                        sidebarPanel(
+                            uiOutput("ui_data"),
+                            width = 3
+                        ),
+                        mainPanel(
+                            tabPanel(
+                                "View first 6 columns",
+                                DT::DTOutput("data_preview")
+                            ),
+                            tabPanel(
+                                "View full",
+                                DT::DTOutput("data_preview_full")
                             )
                         )
                     )
