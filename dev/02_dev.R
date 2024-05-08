@@ -17,6 +17,8 @@
 ## Amend DESCRIPTION with dependencies read from package code parsing
 ## install.packages('attachment') # if needed.
 attachment::att_amend_desc()
+usethis::use_package("tibble")
+usethis::use_package("restrictedROC")
 
 ## Add modules ----
 ## Create a module infrastructure in R/

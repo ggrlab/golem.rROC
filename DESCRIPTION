@@ -7,7 +7,9 @@ License: MIT + file LICENSE
 Imports: 
     config (>= 0.3.2),
     golem (>= 0.4.1),
-    shiny (>= 1.8.1.1)
+    restrictedROC,
+    shiny (>= 1.8.1.1),
+    tibble
 Suggests: 
     knitr,
     rmarkdown,
