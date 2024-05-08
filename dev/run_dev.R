@@ -12,4 +12,4 @@ golem::detach_all_attached()
 golem::document_and_reload()
 
 # Run the application
-print(run_app(options=list(port = 9207)))
+print(run_app(options = list(port = 9207)))

@@ -7,37 +7,30 @@
 app_ui <- function(request) {
     tagList(
         # Leave this function for adding external resources
-        golem_add_external_resources(),
-        # Your application UI logic
-        tabPanel(
-            "DT",
-            h2("A Random DT"),
-            DT::DTOutput("data_table")
-        ),
-        tabPanel(
-            "Image",
-            h2("A Random Image"),
-            plotOutput("image")
-        ),
-        tabPanel(
-            "Plot",
-            h2("A Random Plot"),
-            plotOutput("plot")
-        ),
-        tabPanel(
-            "Print",
-            h2("A Random Print"),
-            verbatimTextOutput("print")
-        ),
-        tabPanel(
-            "Table",
-            h2("A Random Table"),
-            tableOutput("table")
-        ),
-        tabPanel(
-            "Text",
-            h2("A Random Text"),
-            tableOutput("text")
+        # golem_add_external_resources(),
+        fluidPage(
+            sidebarLayout(
+                sidebarPanel(
+                    uiOutput("ui_data")
+                ),
+                mainPanel(
+                    tabsetPanel(
+                        id = "tabs_data",
+                        tabPanel(
+                            "View",
+                            DT::DTOutput("data_preview")
+                        ),
+                        tabPanel(
+                            "Restriction",
+                            tabPanel(
+                                "Text",
+                                h2("A Random Text"),
+                                tableOutput("text")
+                            )
+                        )
+                    )
+                )
+            )
         )
     )
 }
