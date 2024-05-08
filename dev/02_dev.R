@@ -46,7 +46,7 @@ usethis::use_test("app")
 # Documentation
 
 ## Vignette ----
-usethis::use_vignette("golem.rROC")
+usethis::use_vignette("golem_rROC")
 devtools::build_vignettes()
 
 ## Code Coverage----
