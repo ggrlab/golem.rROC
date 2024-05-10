@@ -34,9 +34,11 @@ rroc_secure <- function(df, dependent_vars, independent_vars, n_permutations, po
     }
 
     ### Actually calculate the ROC
+    total_calculations <- length(checked_dependent_vars) * length(checked_independent_vars)
     reslist <- sapply(dependent_vars, function(dv_x) {
             sapply(independent_vars, function(iv_x) {
                 if (dv_x %in% checked_dependent_vars && iv_x %in% checked_independent_vars) {
+                    shiny::incProgress(amount = 1/total_calculations, detail = paste0("Calculating ROC for ", dv_x, " and ", iv_x))
                     rroc_res <- restrictedROC::rROC(
                     # rroc_res <- rROC(
                         x = df,

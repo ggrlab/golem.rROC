@@ -145,9 +145,9 @@ app_server <- function(input, output, session) {
         if (is.null(current_data())) {
             return(NULL)
         }
-        if(is.data.frame(current_data())) {
+        if (is.data.frame(current_data())) {
             return(current_data())
-        }else if (is.list(current_data())) {
+        } else if (is.list(current_data())) {
             df_long <- data.table::rbindlist(current_data(), idcol = "group")
             colnames(df_long) <- c("group", "value")
             return(df_long)
@@ -262,86 +262,98 @@ app_server <- function(input, output, session) {
         }
     })
     observeEvent(input$run_rroc, {
-        dv <- input$dependent_vars
-        iv <- input$independent_vars
-        if (length(dv) == 0) {
-            warning("No dependent variable selected")
-            return()
-        }
-        if (length(iv) == 0) {
-            warning("No independent variable selected")
-            return()
-        }
-        pos_label <- 1
-        if (input$positive_label != "") {
-            pos_label <- input$positive_label
-        }
-        if (is.null(rroc_result())) {
-            # If the reactive value is NULL, then calculate the ROC (First time)
-            rroc_res_tmp <- rroc_secure(
-                df = current_data(),
-                dependent_vars = input$dependent_vars,
-                independent_vars = input$independent_vars,
-                do_plots = TRUE,
-                n_permutations = max(input$n_permutations, 0),
-                positive_label = pos_label,
-                parallel_permutations = FALSE
-            )
-        } else {
-            # Otherwise: If recalculation should be done, then recalculate all dvs and ivs
-            if (input$recalculate_rroc) {
-                new_dv_iv <- sapply(dv, function(x) iv, simplify = FALSE)
-            } else {
-                # Otherwise, only recalculate the dvs and ivs which have not been calculated yet
-                dvs_ivs_existing <- lapply(rroc_result(), names)
-                new_dv_iv <- sapply(input$dependent_vars, function(dv_x) {
-                    iv[!iv %in% dvs_ivs_existing[[dv_x]]]
-                }, simplify = FALSE)
-            }
-            rroc_res_tmp <- sapply(names(new_dv_iv), function(dv_x) {
-                if (length(new_dv_iv[[dv_x]]) == 0) {
-                    return(NULL)
+        shiny::withProgress(
+            message = "Calculating restriction...",
+            detail = "",
+            value = 0,
+            {
+                dv <- input$dependent_vars
+                iv <- input$independent_vars
+                if (length(dv) == 0) {
+                    warning("No dependent variable selected")
+                    return()
                 }
-                tmp <- sapply(new_dv_iv[[dv_x]], function(iv_x) {
-                    return(
-                        rroc_secure(
-                            df = current_data(),
-                            dependent_vars = dv_x,
-                            independent_vars = iv_x,
-                            do_plots = TRUE,
-                            n_permutations = max(input$n_permutations, 0),
-                            positive_label = pos_label,
-                            parallel_permutations = FALSE
-                        )[[dv_x]][[iv_x]]
+                if (length(iv) == 0) {
+                    warning("No independent variable selected")
+                    return()
+                }
+                pos_label <- 1
+                if (input$positive_label != "") {
+                    pos_label <- input$positive_label
+                }
+                if (is.null(rroc_result())) {
+                    # If the reactive value is NULL, then calculate the ROC (First time)
+                    rroc_res_tmp <- rroc_secure(
+                        df = current_data(),
+                        dependent_vars = input$dependent_vars,
+                        independent_vars = input$independent_vars,
+                        do_plots = TRUE,
+                        n_permutations = max(input$n_permutations, 0),
+                        positive_label = pos_label,
+                        parallel_permutations = FALSE
                     )
-                }, simplify = FALSE)
-            }, simplify = FALSE)
-            rroc_res_tmp <- rroc_res_tmp[!all(is.null(rroc_res_tmp))]
-        }
-
-        ## Update (reactive) rroc_result
-        if (is.null(rroc_result())) {
-            rroc_result(rroc_res_tmp)
-        } else if (all(is.null(rroc_res_tmp)) || all(sapply(rroc_res_tmp, is.null))) {
-            # Then all results have been calculated before already
-            print("All results have been calculated before already")
-        } else {
-            new_rroc <- rroc_result()
-            for (dv_x in names(rroc_res_tmp)) {
-                if (!dv_x %in% names(rroc_result())) {
-                    new_rroc[[dv_x]] <- rroc_res_tmp[[dv_x]]
                 } else {
-                    for (iv_x in names(rroc_res_tmp[[dv_x]])) {
-                        new_rroc[[dv_x]][[iv_x]] <- rroc_res_tmp[[dv_x]][[iv_x]]
+                    # Otherwise: If recalculation should be done, then recalculate all dvs and ivs
+                    if (input$recalculate_rroc) {
+                        new_dv_iv <- sapply(dv, function(x) iv, simplify = FALSE)
+                    } else {
+                        # Otherwise, only recalculate the dvs and ivs which have not been calculated yet
+                        dvs_ivs_existing <- lapply(rroc_result(), names)
+                        new_dv_iv <- sapply(input$dependent_vars, function(dv_x) {
+                            iv[!iv %in% dvs_ivs_existing[[dv_x]]]
+                        }, simplify = FALSE)
                     }
+                    rroc_res_tmp <- sapply(names(new_dv_iv), function(dv_x) {
+                        if (length(new_dv_iv[[dv_x]]) == 0) {
+                            return(NULL)
+                        }
+                        tmp <- sapply(new_dv_iv[[dv_x]], function(iv_x) {
+                            return(
+                                rroc_secure(
+                                    df = current_data(),
+                                    dependent_vars = dv_x,
+                                    independent_vars = iv_x,
+                                    do_plots = TRUE,
+                                    n_permutations = max(input$n_permutations, 0),
+                                    positive_label = pos_label,
+                                    parallel_permutations = FALSE
+                                )[[dv_x]][[iv_x]]
+                            )
+                        }, simplify = FALSE)
+                    }, simplify = FALSE)
+                    rroc_res_tmp <- rroc_res_tmp[!all(is.null(rroc_res_tmp))]
                 }
-            }
-            # Update the reactive value
-            rroc_result(new_rroc)
-        }
 
-        output$restriction_plot <- renderPlot(rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]])
-        output$restriction_performances <- DT::renderDT(restriction_perf())
+                ## Update (reactive) rroc_result
+                if (is.null(rroc_result())) {
+                    rroc_result(rroc_res_tmp)
+                } else if (all(is.null(rroc_res_tmp)) || all(sapply(rroc_res_tmp, is.null))) {
+                    # Then all results have been calculated before already
+                    print("All results have been calculated before already")
+                } else {
+                    new_rroc <- rroc_result()
+                    for (dv_x in names(rroc_res_tmp)) {
+                        if (!dv_x %in% names(rroc_result())) {
+                            new_rroc[[dv_x]] <- rroc_res_tmp[[dv_x]]
+                        } else {
+                            for (iv_x in names(rroc_res_tmp[[dv_x]])) {
+                                new_rroc[[dv_x]][[iv_x]] <- rroc_res_tmp[[dv_x]][[iv_x]]
+                            }
+                        }
+                    }
+                    # Update the reactive value
+                    rroc_result(new_rroc)
+                }
+
+                # PlotData <- eventReactive(input$run_rroc,{
+
+                # })
+                output$restriction_plot <- renderPlot({
+                    rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]]
+                })
+                output$restriction_performances <- DT::renderDT(restriction_perf())
+            }
+        )
     })
     restriction_perf <- reactive({
         restrictedROC:::summary.rROC(rroc_result())
