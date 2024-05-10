@@ -215,6 +215,7 @@ app_server <- function(input, output, session) {
                 selected = "group_A"
             ),
             actionButton("run_rroc", "Run restriction", icon = icon("play", verify_fa = FALSE))
+            # checkboxInput("recalculate_rroc", "Recalculate?", value = FALSE, width = NULL)
         )
     })
     rroc_result <- reactiveVal()
@@ -252,13 +253,17 @@ app_server <- function(input, output, session) {
     observeEvent(input$run_rroc, {
         dv <- input$dependent_vars
         iv <- input$independent_vars
+        pos_label <- 1
+        if (input$positive_label != "") {
+            pos_label <- input$positive_label
+        }
         rroc_res_tmp <- restrictedROC::rROC(
             x = current_data(),
             dependent_vars = input$dependent_vars,
             independent_vars = input$independent_vars,
             do_plots = TRUE,
-            n_permutations = input$n_permutations,
-            positive_label = input$positive_label,
+            n_permutations = max(input$n_permutations, 0),
+            positive_label = pos_label,
             parallel_permutations = FALSE
         )
         if (is.null(rroc_result())) {
@@ -280,6 +285,21 @@ app_server <- function(input, output, session) {
         }
 
         output$restriction_plot <- renderPlot(rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]])
-        output$restriction_performances <- DT::renderDT(restrictedROC:::summary.rROC(rroc_result()))
+        output$restriction_performances <- DT::renderDT(restriction_perf())
     })
+    restriction_perf <- reactive({
+        restrictedROC:::summary.rROC(rroc_result())
+    })
+    output$download_rroc <- downloadHandler(
+        filename = function() {
+            "RestrictionPerformance.xlsx"
+        },
+        content = function(fname) {
+            if (!is.null(restriction_perf())) {
+                return(writexl::write_xlsx(restriction_perf(), fname))
+            } else {
+                return(restriction_perf())
+            }
+        }
+    )
 }

@@ -20,7 +20,9 @@ app_ui <- function(request) {
                                 "Plot",
                                 h2("Restriction"),
                                 plotOutput("rroc_plot"),
-                                DT::DTOutput("restriction_performances")
+                                # Make a downloadable DT table
+                                DT::DTOutput("restriction_performances"),
+                                downloadButton("download_rroc", "Download")
                             )
                         )
                     )
