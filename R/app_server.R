@@ -32,6 +32,8 @@ app_server <- function(input, output, session) {
         } else if (any(sapply(c("rda", "rds", "Rdata"), grepl, input$selected_data_type))) {
             uploadfile_fun(accept = c(".rda", ".rds", ".rdata"))
         } else if (input$selected_data_type == "clipboard") {
+        } else if (input$selected_data_type == "glehr2023") {
+            # Do nothing.
         } else if (input$selected_data_type == "qs") {
             warning("NotImplemented")
         } else {
@@ -61,18 +63,13 @@ app_server <- function(input, output, session) {
     #### Data userinterface
     output$ui_data <- shiny::renderUI({
         # possible_data_types <- c("qs", "rds/rda/rData", "csv", "clipboard")
-        possible_data_types <- c("csv", "clipboard")
+        possible_data_types <- c("csv", "clipboard", "glehr2023")
         shiny::wellPanel(
             shiny::selectInput("selected_data_type", label = "Load data of type:", possible_data_types, selected = "clipboard"),
             shiny::conditionalPanel(
                 condition = "input.selected_data_type != 'clipboard'",
                 shiny::conditionalPanel(
                     "input.selected_data_type == 'csv'",
-                    # with(tags, table(
-                    #     td(checkboxInput("man_header", "Header", TRUE)),
-                    #     td(HTML("&nbsp;&nbsp;")),
-                    #     td(checkboxInput("man_str_as_factor", "Str. as Factor", TRUE))
-                    # )),
                     with(tags, table(
                         td(shiny::selectInput("csv_sep", "Separator:", c(Comma = ",", Semicolon = ";", Tab = "\t"), ",", width = "100%")),
                         td(shiny::selectInput("csv_dec", "Decimal:", c(Period = ".", Comma = ","), ".", width = "100%")),
@@ -88,13 +85,14 @@ app_server <- function(input, output, session) {
                 br(),
                 actionButton("reload_data", "Reload", icon = icon("upload", verify_fa = FALSE))
             ),
-            # shiny::conditionalPanel(
-            #   "input.selected_data_type == 'parquet'",
-            #   actionButton("loadPaquet_descr", "Description", icon = icon("upload", verify_fa = FALSE))
-            # ),
             shiny::conditionalPanel(
                 condition = "input.selected_data_type == 'clipboard'",
                 shiny::uiOutput("ui_load_clipboard")
+            ),
+            shiny::conditionalPanel(
+                condition = "input.selected_data_type == 'glehr2023'",
+                br(),
+                actionButton("reload_data", "Reload", icon = icon("upload", verify_fa = FALSE))
             )
         )
     })
@@ -102,6 +100,11 @@ app_server <- function(input, output, session) {
     current_data <- reactiveVal()
     # Set the initial value for current_data
     current_data(glehr2023_cd4_cd8_relative[, -1])
+    # Result of rroc calculations
+    rroc_result <- reactiveVal()
+    rroc_result(frontiers110_tcell_relative__permutation_10k_small)
+    output$restriction_performances <- DT::renderDT(restriction_perf())
+
 
     toListen <- reactive({
         list(
@@ -113,14 +116,20 @@ app_server <- function(input, output, session) {
         if (all(is.null(input$uploadfile))) {
             return()
         }
-        current_data(
-            data.table::fread(
-                input$uploadfile$datapath,
-                sep = input$csv_sep, dec = input$csv_dec,
-                nrows = ifelse(is.numeric(input$data_n_max), input$data_n_max, Inf)
-            ) |>
-                tibble::as_tibble()
-        )
+        if (input$selected_data_type == "glehr2023") {
+            current_data(glehr2023_cd4_cd8_relative[, -1])
+            rroc_result(frontiers110_tcell_relative__permutation_10k)
+            return()
+        } else {
+            current_data(
+                data.table::fread(
+                    input$uploadfile$datapath,
+                    sep = input$csv_sep, dec = input$csv_dec,
+                    nrows = ifelse(is.numeric(input$data_n_max), input$data_n_max, Inf)
+                ) |>
+                    tibble::as_tibble()
+            )
+        }
     })
     observeEvent(input$loadClipData, {
         if (input$clipboard_groupA == "" || input$clipboard_groupB == "") {
@@ -227,7 +236,6 @@ app_server <- function(input, output, session) {
             updateSelectInput(session, "independent_vars", selected = all_cols()[!all_cols() %in% input$dependent_vars])
         }
     })
-    rroc_result <- reactiveVal()
     output$rroc_plot <- renderPlot({
         dv <- input$dependent_vars
         iv <- input$independent_vars
@@ -269,7 +277,19 @@ app_server <- function(input, output, session) {
                 ) +
                 ggplot2::theme_void())
         } else {
-            return(rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]])
+            if(is.null(rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]])){
+                # Then it was probably a result of glehr2023. This is pre-calculated 
+                # but the plots are not stored. So we need to recalculate it.
+                tmp_plot <- restrictedROC::plot_density_rROC_empirical(
+                    values_grouped = split(current_data()[[iv[1]]], current_data()[[dv[1]]]),
+                    positive_label = input$positive_label,
+                )
+                tmp_rroc_res <- rroc_result()
+                tmp_rroc_res[[dv[1]]][[iv[1]]][["plots"]][["plots"]] <- tmp_plot
+                rroc_result(tmp_rroc_res)
+            }
+            tmp_plot <- rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]]
+            return(tmp_plot)
         }
     })
     observeEvent(input$dependent_vars, {

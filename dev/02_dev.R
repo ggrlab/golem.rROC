@@ -24,16 +24,27 @@ usethis::use_package("DT")
 usethis::use_package("ggplot2")
 usethis::use_package("readr")
 usethis::use_package("writexl")
+# packageurl <- "http://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_3.4.4.tar.gz"
+# install.packages(packageurl, repos=NULL, type="source")
 
 load("./data-raw/biodata.rda")
 load("./data-raw/glehr2023_cd4_cd8_relative.rda")
 frontiers110_tcell_relative__permutation_10k <- readRDS(
     "./data-raw/frontiers110_tcell_relative__permutation_10k.rds.rds"
 )
+for (dv_x in names(frontiers110_tcell_relative__permutation_10k)) {
+    for (iv_x in names(frontiers110_tcell_relative__permutation_10k[[dv_x]])) {
+        frontiers110_tcell_relative__permutation_10k[[dv_x]][[iv_x]][["plots"]] <- NULL
+        frontiers110_tcell_relative__permutation_10k[[dv_x]][[iv_x]][["single_rROC"]] <- NULL
+        frontiers110_tcell_relative__permutation_10k[[dv_x]][[iv_x]][["permutation"]][["perm_max_bound"]] <- NULL
+        frontiers110_tcell_relative__permutation_10k[[dv_x]][[iv_x]][["permutation"]][["perm_global_bound"]] <- NULL
+    }
+}
+frontiers110_tcell_relative__permutation_10k_small <- frontiers110_tcell_relative__permutation_10k
 usethis::use_data(
     biodata,
     glehr2023_cd4_cd8_relative,
-    frontiers110_tcell_relative__permutation_10k,
+    frontiers110_tcell_relative__permutation_10k_small,
     internal = TRUE, overwrite = TRUE
 )
 
