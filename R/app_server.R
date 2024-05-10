@@ -345,6 +345,7 @@ app_server <- function(input, output, session) {
     })
     restriction_perf <- reactive({
         restrictedROC:::summary.rROC(rroc_result())
+        # summary(rroc_result())
     })
     output$download_rroc <- downloadHandler(
         filename = function() {

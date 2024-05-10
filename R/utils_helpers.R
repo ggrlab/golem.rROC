@@ -38,6 +38,7 @@ rroc_secure <- function(df, dependent_vars, independent_vars, n_permutations, po
             sapply(independent_vars, function(iv_x) {
                 if (dv_x %in% checked_dependent_vars && iv_x %in% checked_independent_vars) {
                     rroc_res <- restrictedROC::rROC(
+                    # rroc_res <- rROC(
                         x = df,
                         dependent_vars = dv_x,
                         independent_vars = iv_x,
