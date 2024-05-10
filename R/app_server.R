@@ -182,6 +182,7 @@ app_server <- function(input, output, session) {
                 size = min(10, length(all_cols())),
                 selectize = FALSE
             ),
+            actionButton("dv_DEselect_all", "De/select all DV"),
             selectInput(
                 inputId = "independent_vars",
                 label = "Independent variables:",
@@ -191,6 +192,7 @@ app_server <- function(input, output, session) {
                 size = min(10, length(all_cols())),
                 selectize = FALSE
             ),
+            actionButton("iv_DEselect_all", "De/select all IV"),
             numericInput(
                 inputId = "n_permutations",
                 label = "Number of permutations:",
@@ -205,6 +207,25 @@ app_server <- function(input, output, session) {
             actionButton("run_rroc", "Run restriction", icon = icon("play", verify_fa = FALSE)),
             checkboxInput("recalculate_rroc", "Recalculate?", value = FALSE, width = NULL)
         )
+    })
+    dv_selector <- reactiveVal(value = TRUE)
+    iv_selector <- reactiveVal(value = TRUE)
+    observeEvent(input$dv_DEselect_all, {
+        # invert dv_selector
+        dv_selector(!dv_selector())
+        if (dv_selector() == "FALSE") {
+            updateSelectInput(session, "dependent_vars", selected = character(0))
+        } else {
+            updateSelectInput(session, "dependent_vars", selected = all_cols())
+        }
+    })
+    observeEvent(input$iv_DEselect_all, {
+        iv_selector(!iv_selector())
+        if (iv_selector() == "FALSE") {
+            updateSelectInput(session, "independent_vars", selected = character(0))
+        } else {
+            updateSelectInput(session, "independent_vars", selected = all_cols()[!all_cols() %in% input$dependent_vars])
+        }
     })
     rroc_result <- reactiveVal()
     output$rroc_plot <- renderPlot({
