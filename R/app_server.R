@@ -236,6 +236,12 @@ app_server <- function(input, output, session) {
             updateSelectInput(session, "independent_vars", selected = all_cols()[!all_cols() %in% input$dependent_vars])
         }
     })
+    listen_iv_dv_first <- reactive({
+        list(
+            input$dependent_vars[1],
+            input$independent_vars[1]
+        )
+    })
     output$rroc_plot <- renderPlot({
         dv <- input$dependent_vars
         iv <- input$independent_vars
@@ -277,8 +283,8 @@ app_server <- function(input, output, session) {
                 ) +
                 ggplot2::theme_void())
         } else {
-            if(is.null(rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]])){
-                # Then it was probably a result of glehr2023. This is pre-calculated 
+            if (is.null(rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]])) {
+                # Then it was probably a result of glehr2023. This is pre-calculated
                 # but the plots are not stored. So we need to recalculate it.
                 tmp_plot <- restrictedROC::plot_density_rROC_empirical(
                     values_grouped = split(current_data()[[iv[1]]], current_data()[[dv[1]]]),
@@ -385,20 +391,24 @@ app_server <- function(input, output, session) {
                     # Update the reactive value
                     rroc_result(new_rroc)
                 }
-
-                # PlotData <- eventReactive(input$run_rroc,{
-
-                # })
                 output$restriction_plot <- renderPlot({
                     rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]]
                 })
-                output$restriction_performances <- DT::renderDT(restriction_perf())
             }
         )
     })
+    output$restriction_performances <- DT::renderDT(restriction_perf())
     restriction_perf <- reactive({
-        restrictedROC:::summary.rROC(rroc_result())
-        # summary(rroc_result())
+        perf_table <- restrictedROC:::summary.rROC(rroc_result())
+        if (!is.null(perf_table) & !any(sapply(listen_iv_dv_first(), is.null))) {
+            perf_table <- perf_table[order(
+                # First, order by the dependent variable
+                sub(listen_iv_dv_first()[[1]], "", perf_table[["level_1"]], fixed = TRUE),
+                # Second, order by the independent variable
+                sub(listen_iv_dv_first()[[2]], "", perf_table[["level_2"]], fixed = TRUE)
+            ), ]
+        }
+        return(perf_table)
     })
     output$download_rroc <- downloadHandler(
         filename = function() {
