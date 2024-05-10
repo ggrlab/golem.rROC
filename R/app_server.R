@@ -222,17 +222,40 @@ app_server <- function(input, output, session) {
     output$rroc_plot <- renderPlot({
         dv <- input$dependent_vars
         iv <- input$independent_vars
+        print(paste0("Plotting ", dv[1], ": ", iv[1]))
         if (
-            is.null(rroc_result()) || is.null(dv) || is.null(iv) ||
+            is.null(
+                # No calculation at all
+                rroc_result()
+            ) ||
+                # Neither dv nor iv selected
+                is.null(dv) || is.null(iv) ||
+                # dv not in rroc_result
                 !dv[1] %in% names(rroc_result()) ||
-                !iv[1] %in% names(rroc_result()[[dv[1]]])) {
+                # iv not in rroc_result
+                !iv[1] %in% names(rroc_result()[[dv[1]]])
+        ) {
             # Then return a plot that says "No data"
-            print("No data")
+            print("    No data")
             return(ggplot2::ggplot() +
                 ggplot2::annotate(
                     "text",
                     x = 0.5, y = 0.5,
-                    label = "Restriction not calculated for this variable",
+                    label = "Restriction not calculated for this variable.\nHit 'Run restriction' to calculate it.",
+                    size = 10
+                ) +
+                ggplot2::theme_void())
+        } else if (all(is.na(rroc_result()[[dv[1]]][[iv[1]]]))) {
+            print("    Not calculatable")
+            return(ggplot2::ggplot() +
+                ggplot2::annotate(
+                    "text",
+                    x = 0.5, y = 0.5,
+                    label = paste0(
+                        "Restriction not calculatable. \n",
+                        "Did you select a dependent variable with 2 unique values and\n",
+                        "an independent variable with numeric values?"
+                    ),
                     size = 10
                 ) +
                 ggplot2::theme_void())
@@ -267,8 +290,8 @@ app_server <- function(input, output, session) {
         }
         if (is.null(rroc_result())) {
             # If the reactive value is NULL, then calculate the ROC (First time)
-            rroc_res_tmp <- restrictedROC::rROC(
-                x = current_data(),
+            rroc_res_tmp <- rroc_secure(
+                df = current_data(),
                 dependent_vars = input$dependent_vars,
                 independent_vars = input$independent_vars,
                 do_plots = TRUE,
@@ -293,8 +316,8 @@ app_server <- function(input, output, session) {
                 }
                 tmp <- sapply(new_dv_iv[[dv_x]], function(iv_x) {
                     return(
-                        restrictedROC::rROC(
-                            x = current_data(),
+                        rroc_secure(
+                            df = current_data(),
                             dependent_vars = dv_x,
                             independent_vars = iv_x,
                             do_plots = TRUE,
