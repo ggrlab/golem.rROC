@@ -24,6 +24,11 @@ usethis::use_package("DT")
 usethis::use_package("ggplot2")
 usethis::use_package("readr")
 usethis::use_package("writexl")
+
+
+usethis::use_data(biodata, glehr2023_cd4_cd8_relative, internal = TRUE)
+
+
 ## Add modules ----
 ## Create a module infrastructure in R/
 golem::add_module(name = "name_of_module1", with_test = TRUE) # Name of the module

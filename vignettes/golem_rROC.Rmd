@@ -17,32 +17,31 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(golem.rROC)
 library(tibble)
-data("glehr2023_cd4_cd8_relative", package = "golem.rROC")
+# data("glehr2023_cd4_cd8_relative", package = "golem.rROC")
+
+# rroc_res <- restrictedROC::plot_density_rROC_empirical(
+#     values_grouped = with(
+#         glehr2023_cd4_cd8_relative,
+#         split(`/AllCells/CD4+/CD8-/Tem`, Hepatitis)
+#     ),
+#     positive_label = "Yes"
+# )
+
+# rroc_pvalue <- restrictedROC::rROC(
+#     glehr2023_cd4_cd8_relative,
+#     dependent_vars = c("Hepatitis"),
+#     independent_vars = "/AllCells/CD4+/CD8-/Tem",
+#     n_permutations = 10,
+#     positive_label = "Yes",
+#     do_plots = TRUE
+# )
 
 
-rroc_res <- restrictedROC::plot_density_rROC_empirical(
-    values_grouped = with(
-        glehr2023_cd4_cd8_relative,
-        split(`/AllCells/CD4+/CD8-/Tem`, Hepatitis)
-    ),
-    positive_label = "Yes"
-)
+# print(rroc_pvalue[["Hepatitis"]][["/AllCells/CD4+/CD8-/Tem"]][["plots"]][["plots"]])
+# res_permutation <- rroc_pvalue[["Hepatitis"]][["/AllCells/CD4+/CD8-/Tem"]][["permutation"]]
+# res_permutation$performances # to download
 
-rroc_pvalue <- restrictedROC::rROC(
-    glehr2023_cd4_cd8_relative,
-    dependent_vars = c("Hepatitis"),
-    independent_vars = "/AllCells/CD4+/CD8-/Tem",
-    n_permutations = 10,
-    positive_label = "Yes",
-    do_plots = TRUE
-)
-
-
-print(rroc_pvalue[["Hepatitis"]][["/AllCells/CD4+/CD8-/Tem"]][["plots"]][["plots"]])
-res_permutation <- rroc_pvalue[["Hepatitis"]][["/AllCells/CD4+/CD8-/Tem"]][["permutation"]]
-res_permutation$performances # to download
-
-# Print the following
-res_permutation$max_total
-res_permutation$permutation_pval
+# # Print the following
+# res_permutation$max_total
+# res_permutation$permutation_pval
 ```
