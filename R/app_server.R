@@ -118,8 +118,8 @@ app_server <- function(input, output, session) {
         }
         current_data(NULL)
         rroc_result(NULL)
-        
-        
+
+
         if (input$selected_data_type == "glehr2023") {
             current_data(glehr2023_cd4_cd8_relative[, -1])
             rroc_result(frontiers110_tcell_relative__permutation_10k)
