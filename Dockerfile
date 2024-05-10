@@ -22,5 +22,7 @@ ADD . /build_zone
 WORKDIR /build_zone
 RUN R -e 'remotes::install_local(upgrade="never")'
 RUN rm -rf /build_zone
-EXPOSE 80
-CMD R -e "options('shiny.port'=80,shiny.host='0.0.0.0');library(golem.rROC);golem.rROC::run_app()"
+EXPOSE 9207
+# CMD R -e "options('shiny.port'=80,shiny.host='0.0.0.0');library(golem.rROC);golem.rROC::run_app()"
+CMD R -e "golem.rROC::run_app(options = list(port = 9207, host='0.0.0.0'))"
+# CMD R -e "options('shiny.port'=8080,shiny.host='0.0.0.0');shiny::runGitHub('shiny-examples', 'rstudio', subdir = '001-hello');"
