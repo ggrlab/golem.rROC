@@ -42,8 +42,8 @@ golem::add_shinyserver_file()
 # Deploy to Posit Connect or ShinyApps.io
 # In command line.
 rsconnect::deployApp(
-    appName = "restrictionGOLEM_v2",
-    appTitle = "Restriction as a Golem-Service",
+    appName = "restrictedROC",
+    appTitle = "Restricted ROC curve calculations",
     appFiles = c(
         # Add any additional files unique to your app here.
         "R/",
