@@ -87,7 +87,8 @@ app_server <- function(input, output, session) {
 
     #### Data userinterface
     output$ui_data <- shiny::renderUI({
-        possible_data_types <- c("qs", "rds/rda/rData", "csv", "clipboard")
+        # possible_data_types <- c("qs", "rds/rda/rData", "csv", "clipboard")
+        possible_data_types <- c("csv", "clipboard")
         shiny::wellPanel(
             shiny::selectInput("selected_data_type", label = "Load data of type:", possible_data_types, selected = "clipboard"),
             shiny::conditionalPanel(
