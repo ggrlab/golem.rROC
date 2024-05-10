@@ -9,7 +9,7 @@
 rroc_secure <- function(df, dependent_vars, independent_vars, n_permutations, positive_label, ...) {
     # 1. Check that dependent_vars has two levels
     checked_dv <- sapply(dependent_vars, function(dv_x) {
-        if (length(unique(na.omit(df[[dv_x]]))) != 2) {
+        if (length(unique(df[[dv_x]][!is.na(df[[dv_x]])])) != 2) {
             warning(paste0("The dependent variable ", dv_x, " has more than two levels and is omitted."))
             return(FALSE)
         } else {

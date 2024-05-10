@@ -6,10 +6,15 @@ Description: Shiny application based on golem to allow restrictedROC be visualiz
 License: MIT + file LICENSE
 Imports: 
     config (>= 0.3.2),
+    data.table,
+    DT,
+    ggplot2,
     golem (>= 0.4.1),
+    readr,
     restrictedROC,
     shiny (>= 1.8.1.1),
-    tibble
+    tibble,
+    writexl
 Suggests: 
     knitr,
     rmarkdown,
