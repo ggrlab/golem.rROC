@@ -251,7 +251,7 @@ app_server <- function(input, output, session) {
             # iv not in rroc_result
             !iv %in% names(rroc_result()[[dv]]))
     }
-    redo_plot <- reactiveVal(TRUE)
+    redo_plot <- reactiveVal(list("dv" = "", "iv" = ""))
     rroc_plot <- observeEvent(input$independent_vars, {
         dv <- listen_iv_dv_first()[["dv"]]
         iv <- listen_iv_dv_first()[["iv"]]
@@ -271,12 +271,12 @@ app_server <- function(input, output, session) {
             }
         }
         # reupdate listen_iv_dv_first
-        redo_plot(!as.logical(redo_plot()))
+        redo_plot(listen_iv_dv_first())
     })
     output$rroc_plot <- renderPlot({
-        redo_plot()
-        dv <- listen_iv_dv_first()[["dv"]]
-        iv <- listen_iv_dv_first()[["iv"]]
+        dv <- redo_plot()[["dv"]]
+        iv <- redo_plot()[["iv"]]
+        print(paste0("Plotting ", dv, ": ", iv))
         if (!has_been_calculated(dv, iv)) {
             # Then return a plot that says "No data"
             print("    Plotting no data")
@@ -303,7 +303,7 @@ app_server <- function(input, output, session) {
                 ) +
                 ggplot2::theme_void())
         } else {
-            print(paste0("Plotting ", dv, ": ", iv))
+            print("    Plotting restriction")
             return(rroc_result()[[dv]][[iv]][["plots"]][["plots"]])
         }
     })
