@@ -116,6 +116,10 @@ app_server <- function(input, output, session) {
         if (all(is.null(input$uploadfile))) {
             return()
         }
+        current_data(NULL)
+        rroc_result(NULL)
+        
+        
         if (input$selected_data_type == "glehr2023") {
             current_data(glehr2023_cd4_cd8_relative[, -1])
             rroc_result(frontiers110_tcell_relative__permutation_10k)
@@ -145,9 +149,9 @@ app_server <- function(input, output, session) {
 
         df <- list(data_A, data_B)
         names(df) <- c("group_A", "group_B")
-        # df_long <- data.table::rbindlist(df, idcol = "group")
-        # colnames(df_long) <- c("group", "value")
-        current_data(df)
+        df_long <- data.table::rbindlist(df, idcol = "group")
+        colnames(df_long) <- c("group", "value")
+        current_data(df_long)
     })
 
     current_data_table <- reactive({
@@ -177,7 +181,7 @@ app_server <- function(input, output, session) {
 
     #### Restriction userinterface
     all_cols <- reactive({
-        colnames(current_data())
+        names(current_data())
     })
 
     output$ui_rroc <- shiny::renderUI({
