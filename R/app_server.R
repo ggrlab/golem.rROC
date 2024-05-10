@@ -247,6 +247,7 @@ app_server <- function(input, output, session) {
         )
     })
     output$rroc_plot <- renderPlot({
+        browser()
         dv <- input$dependent_vars
         iv <- input$independent_vars
         print(paste0("Plotting ", dv[1], ": ", iv[1]))
