@@ -10,7 +10,7 @@ app_ui <- function(request) {
         # golem_add_external_resources(),
         fluidPage(
             tabsetPanel(
-                id = "tabs_data",
+                id = "tabs_restriction",
                 tabPanel(
                     "Restriction",
                     sidebarLayout(
@@ -35,13 +35,16 @@ app_ui <- function(request) {
                             width = 3
                         ),
                         mainPanel(
-                            tabPanel(
-                                "View first 6 columns",
-                                DT::DTOutput("data_preview")
-                            ),
-                            tabPanel(
-                                "View full",
-                                DT::DTOutput("data_preview_full")
+                            tabsetPanel(
+                                id = "tabs_data",
+                                tabPanel(
+                                    "View first 6 columns",
+                                    DT::DTOutput("data_preview")
+                                ),
+                                tabPanel(
+                                    "View full",
+                                    DT::DTOutput("data_preview_full")
+                                )
                             )
                         )
                     )

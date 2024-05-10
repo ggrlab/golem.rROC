@@ -127,7 +127,9 @@ app_server <- function(input, output, session) {
     })
 
     current_data <- reactiveVal()
+    # Set the initial value for current_data
     current_data(glehr2023_cd4_cd8_relative[, -1])
+
     toListen <- reactive({
         list(
             input$uploadfile,
@@ -161,22 +163,34 @@ app_server <- function(input, output, session) {
 
         df <- list(data_A, data_B)
         names(df) <- c("group_A", "group_B")
-        df_long <- data.table::rbindlist(df, idcol = "group")
-        colnames(df_long) <- c("group", "value")
-        current_data(df_long)
+        # df_long <- data.table::rbindlist(df, idcol = "group")
+        # colnames(df_long) <- c("group", "value")
+        current_data(df)
     })
 
+    current_data_table <- reactive({
+        if (is.null(current_data())) {
+            return(NULL)
+        }
+        if(is.data.frame(current_data())) {
+            return(current_data())
+        }else if (is.list(current_data())) {
+            df_long <- data.table::rbindlist(current_data(), idcol = "group")
+            colnames(df_long) <- c("group", "value")
+            return(df_long)
+        }
+    })
     output$data_preview <- DT::renderDT({
         if (length(input$selected_data_type) == 0) {
             return()
         }
-        current_data()[, seq_len(min(ncol(current_data()), 6))]
+        current_data_table()[, seq_len(min(ncol(current_data_table()), 6))]
     })
     output$data_preview_full <- DT::renderDT({
         if (length(input$selected_data_type) == 0) {
             return()
         }
-        current_data()
+        current_data_table()
     })
 
     #### Restriction userinterface
