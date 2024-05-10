@@ -183,42 +183,34 @@ app_server <- function(input, output, session) {
     all_cols <- reactive({
         names(current_data())
     })
-
-    output$ui_rroc <- shiny::renderUI({
-        shiny::wellPanel(
-            selectInput(
-                inputId = "dependent_vars",
-                label = "Dependent variables:",
-                choices = all_cols(),
-                selected = input$dependent_vars,
-                multiple = TRUE,
-                size = min(10, length(all_cols())),
-                selectize = FALSE
-            ),
-            actionButton("dv_DEselect_all", "De/select all DV"),
-            selectInput(
-                inputId = "independent_vars",
-                label = "Independent variables:",
-                choices = all_cols()[!all_cols() %in% input$dependent_vars],
-                selected = all_cols()[!all_cols() %in% input$dependent_vars],
-                multiple = TRUE,
-                size = min(10, length(all_cols())),
-                selectize = FALSE
-            ),
-            actionButton("iv_DEselect_all", "De/select all IV"),
-            numericInput(
-                inputId = "n_permutations",
-                label = "Number of permutations:",
-                value = 4, min = 0, max = 1000, step = 1
-            ),
-            selectInput(
-                inputId = "positive_label",
-                label = "Positive label:",
-                choices = possible_positive_labels(),
-                selected = "group_A"
-            ),
-            actionButton("run_rroc", "Run restriction", icon = icon("play", verify_fa = FALSE)),
-            checkboxInput("recalculate_rroc", "Recalculate?", value = FALSE, width = NULL)
+    output$ui_dvs <- shiny::renderUI({
+        selectInput(
+            inputId = "dependent_vars",
+            label = "Dependent variables:",
+            choices = all_cols(),
+            # selected = input$dependent_vars,
+            multiple = TRUE,
+            size = min(10, length(all_cols())),
+            selectize = FALSE
+        )
+    })
+    output$ui_ivs <- shiny::renderUI({
+        selectInput(
+            inputId = "independent_vars",
+            label = "Independent variables:",
+            choices = all_cols()[!all_cols() %in% input$dependent_vars],
+            selected = all_cols()[!all_cols() %in% input$dependent_vars],
+            multiple = TRUE,
+            size = min(10, length(all_cols())),
+            selectize = FALSE
+        )
+    })
+    output$ui_positive_labels <- shiny::renderUI({
+        selectInput(
+            inputId = "positive_label",
+            label = "Positive label:",
+            choices = possible_positive_labels(),
+            selected = "group_A"
         )
     })
     dv_selector <- reactiveVal(value = TRUE)
@@ -242,29 +234,52 @@ app_server <- function(input, output, session) {
     })
     listen_iv_dv_first <- reactive({
         list(
-            input$dependent_vars[1],
-            input$independent_vars[1]
+            "dv" = input$dependent_vars[1],
+            "iv" = input$independent_vars[1]
         )
     })
+
+    has_been_calculated <- function(dv, iv) {
+        !(is.null(
+            # No calculation at all
+            rroc_result()
+        ) ||
+            # Neither dv nor iv selected
+            is.null(dv) || is.null(iv) ||
+            # dv not in rroc_result
+            !dv %in% names(rroc_result()) ||
+            # iv not in rroc_result
+            !iv %in% names(rroc_result()[[dv]]))
+    }
+    redo_plot <- reactiveVal(TRUE)
+    rroc_plot <- observeEvent(input$independent_vars, {
+        dv <- listen_iv_dv_first()[["dv"]]
+        iv <- listen_iv_dv_first()[["iv"]]
+        if(iv == ""){return()}
+        if (has_been_calculated(dv, iv) && !all(is.na(rroc_result()[[dv]][[iv]]))) {
+            if (is.null(rroc_result()[[dv]][[iv]][["plots"]][["plots"]])) {
+                # Then it was probably a result of glehr2023. This is pre-calculated
+                # but the plots are not stored. So we need to recalculate it.
+                tmp_plot <- restrictedROC::plot_density_rROC_empirical(
+                    values_grouped = split(current_data()[[iv]], current_data()[[dv]]),
+                    positive_label = input$positive_label,
+                )
+                tmp_rroc_res <- rroc_result()
+                tmp_rroc_res[[dv]][[iv]][["plots"]][["plots"]] <- tmp_plot
+                rroc_result(tmp_rroc_res)
+                cat("    Restriction plot was recalculated\n")
+            }
+        }
+        # reupdate listen_iv_dv_first
+        redo_plot(!as.logical(redo_plot()))
+    })
     output$rroc_plot <- renderPlot({
-        browser()
-        dv <- input$dependent_vars
-        iv <- input$independent_vars
-        print(paste0("Plotting ", dv[1], ": ", iv[1]))
-        if (
-            is.null(
-                # No calculation at all
-                rroc_result()
-            ) ||
-                # Neither dv nor iv selected
-                is.null(dv) || is.null(iv) ||
-                # dv not in rroc_result
-                !dv[1] %in% names(rroc_result()) ||
-                # iv not in rroc_result
-                !iv[1] %in% names(rroc_result()[[dv[1]]])
-        ) {
+        redo_plot()
+        dv <- listen_iv_dv_first()[["dv"]]
+        iv <- listen_iv_dv_first()[["iv"]]
+        if (!has_been_calculated(dv, iv)) {
             # Then return a plot that says "No data"
-            print("    No data")
+            print("    Plotting no data")
             return(ggplot2::ggplot() +
                 ggplot2::annotate(
                     "text",
@@ -273,8 +288,8 @@ app_server <- function(input, output, session) {
                     size = 10
                 ) +
                 ggplot2::theme_void())
-        } else if (all(is.na(rroc_result()[[dv[1]]][[iv[1]]]))) {
-            print("    Not calculatable")
+        } else if (all(is.na(rroc_result()[[dv]][[iv]]))) {
+            print("    Plotting not calculatable")
             return(ggplot2::ggplot() +
                 ggplot2::annotate(
                     "text",
@@ -288,24 +303,13 @@ app_server <- function(input, output, session) {
                 ) +
                 ggplot2::theme_void())
         } else {
-            if (is.null(rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]])) {
-                # Then it was probably a result of glehr2023. This is pre-calculated
-                # but the plots are not stored. So we need to recalculate it.
-                tmp_plot <- restrictedROC::plot_density_rROC_empirical(
-                    values_grouped = split(current_data()[[iv[1]]], current_data()[[dv[1]]]),
-                    positive_label = input$positive_label,
-                )
-                tmp_rroc_res <- rroc_result()
-                tmp_rroc_res[[dv[1]]][[iv[1]]][["plots"]][["plots"]] <- tmp_plot
-                rroc_result(tmp_rroc_res)
-            }
-            tmp_plot <- rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]]
-            return(tmp_plot)
+            print(paste0("Plotting ", dv, ": ", iv))
+            return(rroc_result()[[dv]][[iv]][["plots"]][["plots"]])
         }
     })
-    observeEvent(input$dependent_vars, {
-        print(input$dependent_vars)
-    })
+    # observeEvent(input$dependent_vars, {
+    #     print(input$dependent_vars)
+    # })
     possible_positive_labels <- reactive({
         if (length(input$dependent_vars) != 1) {
             return(NULL)

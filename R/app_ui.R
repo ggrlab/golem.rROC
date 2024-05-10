@@ -14,7 +14,22 @@ app_ui <- function(request) {
                 tabPanel(
                     "Restriction",
                     sidebarLayout(
-                        sidebarPanel(uiOutput("ui_rroc")),
+                        sidebarPanel(
+                            shiny::wellPanel(
+                                uiOutput("ui_dvs"),
+                                actionButton("dv_DEselect_all", "De/select all DV"),
+                                uiOutput("ui_ivs"),
+                                actionButton("iv_DEselect_all", "De/select all IV"),
+                                numericInput(
+                                    inputId = "n_permutations",
+                                    label = "Number of permutations:",
+                                    value = 4, min = 0, max = 1000, step = 1
+                                ),
+                                uiOutput("ui_positive_labels"),
+                                actionButton("run_rroc", "Run restriction", icon = icon("play", verify_fa = FALSE)),
+                                checkboxInput("recalculate_rroc", "Recalculate?", value = FALSE, width = NULL)
+                            )
+                        ),
                         mainPanel(
                             tabPanel(
                                 "Plot",
