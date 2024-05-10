@@ -1,6 +1,6 @@
 Package: golem.rROC
 Title: RestrictedROC application
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R: person('Gunther', 'Glehr', email = 'gunthergl@gmx.net', role = c('cre', 'aut'), comment = c(ORCID = '0000-0002-1495-9162'))
 Description: Shiny application based on golem to allow restrictedROC be visualized in a browser.
 License: MIT + file LICENSE
@@ -10,6 +10,7 @@ Imports:
     DT,
     ggplot2,
     golem (>= 0.4.1),
+    pkgload,
     readr,
     restrictedROC,
     shiny (>= 1.8.1.1),
