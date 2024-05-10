@@ -25,8 +25,17 @@ usethis::use_package("ggplot2")
 usethis::use_package("readr")
 usethis::use_package("writexl")
 
-
-usethis::use_data(biodata, glehr2023_cd4_cd8_relative, internal = TRUE)
+load("./data-raw/biodata.rda")
+load("./data-raw/glehr2023_cd4_cd8_relative.rda")
+frontiers110_tcell_relative__permutation_10k <- readRDS(
+    "./data-raw/frontiers110_tcell_relative__permutation_10k.rds.rds"
+)
+usethis::use_data(
+    biodata,
+    glehr2023_cd4_cd8_relative,
+    frontiers110_tcell_relative__permutation_10k,
+    internal = TRUE, overwrite = TRUE
+)
 
 
 ## Add modules ----
