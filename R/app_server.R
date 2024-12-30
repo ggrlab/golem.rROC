@@ -37,6 +37,21 @@ app_server <- function(input, output, session) {
     output$data_preview_full <- DT::renderDT({
         render_data_preview_full(input, current_data_table)
     })
+
+    
+    # Restriction UI
+    output$ui_dvs <- shiny::renderUI({
+        render_dvs_ui(all_cols)
+    })
+
+    output$ui_ivs <- shiny::renderUI({
+        render_ivs_ui(all_cols, input)
+    })
+
+    output$ui_positive_labels <- shiny::renderUI({
+        render_positive_labels_ui(possible_positive_labels)
+    })
+
 }
 
 #' Initialize shared data
@@ -148,7 +163,17 @@ current_data_table <- reactive({
     }
 })
 current_data <- reactiveVal()
-
+#### Restriction userinterface
+all_cols <- reactive({
+    names(current_data())
+})
+possible_positive_labels <- reactive({
+    if (length(input$dependent_vars) != 1) {
+        return(NULL)
+    } else {
+        return(unique(current_data()[[input$dependent_vars]]))
+    }
+})
 
 #' Render data preview
 #'
@@ -162,6 +187,10 @@ render_data_preview <- function(input, current_data_table) {
     current_data_table()[, seq_len(min(ncol(current_data_table()), 6))]
 }
 
+
+
+
+
 #' Render full data preview
 #'
 #' @param input Shiny input object
@@ -172,4 +201,52 @@ render_data_preview_full <- function(input, current_data_table) {
         return()
     }
     current_data_table()
+}
+
+
+
+##### Render UIs
+#' Render dependent variables UI
+#'
+#' @param all_cols Reactive value for all columns
+#' @return A UI element for selecting dependent variables
+render_dvs_ui <- function(all_cols) {
+    selectInput(
+        inputId = "dependent_vars",
+        label = "Dependent variables:",
+        choices = all_cols(),
+        multiple = TRUE,
+        size = min(10, length(all_cols())),
+        selectize = FALSE
+    )
+}
+
+#' Render independent variables UI
+#'
+#' @param all_cols Reactive value for all columns
+#' @param input Shiny input object
+#' @return A UI element for selecting independent variables
+render_ivs_ui <- function(all_cols, input) {
+    selectInput(
+        inputId = "independent_vars",
+        label = "Independent variables:",
+        choices = all_cols()[!all_cols() %in% input$dependent_vars],
+        selected = all_cols()[!all_cols() %in% input$dependent_vars],
+        multiple = TRUE,
+        size = min(10, length(all_cols())),
+        selectize = FALSE
+    )
+}
+
+#' Render positive labels UI
+#'
+#' @param possible_positive_labels Reactive value for possible positive labels
+#' @return A UI element for selecting positive labels
+render_positive_labels_ui <- function(possible_positive_labels) {
+    selectInput(
+        inputId = "positive_label",
+        label = "Positive label:",
+        choices = possible_positive_labels(),
+        selected = "group_A"
+    )
 }
