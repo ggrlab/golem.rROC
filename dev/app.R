@@ -11,5 +11,11 @@ golem::detach_all_attached()
 # Document and reload your package
 golem::document_and_reload()
 
-# Run the application
+devtools::install_github("https://github.com/vreederene-90/autoreload.fix")
+options(shiny.autoreload = TRUE)
+
+# # Run the application
 print(run_app(options = list(port = 9207)))
+# print(shiny::runApp(port = 9207))
+
+# autoreload.fix::autorefresh
