@@ -36,24 +36,24 @@ rroc_secure <- function(df, dependent_vars, independent_vars, n_permutations, po
     ### Actually calculate the ROC
     total_calculations <- length(checked_dependent_vars) * length(checked_independent_vars)
     reslist <- sapply(dependent_vars, function(dv_x) {
-            sapply(independent_vars, function(iv_x) {
-                if (dv_x %in% checked_dependent_vars && iv_x %in% checked_independent_vars) {
-                    shiny::incProgress(amount = 1/total_calculations, detail = paste0("Calculating ROC for ", dv_x, " and ", iv_x))
-                    rroc_res <- restrictedROC::rROC(
+        sapply(independent_vars, function(iv_x) {
+            if (dv_x %in% checked_dependent_vars && iv_x %in% checked_independent_vars) {
+                shiny::incProgress(amount = 1 / total_calculations, detail = paste0("Calculating ROC for ", dv_x, " and ", iv_x))
+                rroc_res <- restrictedROC::rROC(
                     # rroc_res <- rROC(
-                        x = df,
-                        dependent_vars = dv_x,
-                        independent_vars = iv_x,
-                        do_plots = TRUE,
-                        n_permutations = max(n_permutations, 0),
-                        positive_label = positive_label,
-                        parallel_permutations = FALSE
-                    )[[1]][[1]]
-                } else {
-                    rroc_res <- NA
-                }
-                return(rroc_res)
-            }, simplify = FALSE)
+                    x = df,
+                    dependent_vars = dv_x,
+                    independent_vars = iv_x,
+                    do_plots = TRUE,
+                    n_permutations = max(n_permutations, 0),
+                    positive_label = positive_label,
+                    parallel_permutations = FALSE
+                )[[1]][[1]]
+            } else {
+                rroc_res <- NA
+            }
+            return(rroc_res)
         }, simplify = FALSE)
+    }, simplify = FALSE)
     return(reslist)
 }

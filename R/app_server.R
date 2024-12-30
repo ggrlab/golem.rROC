@@ -255,7 +255,9 @@ app_server <- function(input, output, session) {
     rroc_plot <- observeEvent(input$independent_vars, {
         dv <- listen_iv_dv_first()[["dv"]]
         iv <- listen_iv_dv_first()[["iv"]]
-        if(iv == ""){return()}
+        if (iv == "") {
+            return()
+        }
         if (has_been_calculated(dv, iv) && !all(is.na(rroc_result()[[dv]][[iv]]))) {
             if (is.null(rroc_result()[[dv]][[iv]][["plots"]][["plots"]])) {
                 # Then it was probably a result of glehr2023. This is pre-calculated
