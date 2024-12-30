@@ -17,7 +17,7 @@ app_ui <- function(request) {
                         sidebarPanel(
                             shiny::wellPanel(
                                 uiOutput("ui_dvs"),
-                                actionButton("dv_DEselect_all", "De/select all DV"),
+                                actionButton("dv_DEselect_all", "De/select  asdf all DV"),
                                 uiOutput("ui_ivs"),
                                 actionButton("iv_DEselect_all", "De/select all IV"),
                                 numericInput(
@@ -62,6 +62,35 @@ app_ui <- function(request) {
                                 )
                             )
                         )
+                    )
+                ),
+                tabPanel(
+                    "HistogramModule duplicate",
+                    ui_histogram("hist1")
+                ),
+                tabPanel(
+                    "HistogramModule NOdup",
+                    ui_histogram("hist2")
+                ),
+                tabPanel(
+                    "DatasetModule",
+                    fluidPage(
+                        datasetInput("dataset", filter = NULL),
+                        tableOutput("data")
+                    )
+                ),
+                tabPanel(
+                    "SelectVarModule",
+                    fluidPage(
+                        datasetInput("data", is.data.frame),
+                        selectVarInput("var"),
+                        verbatimTextOutput("out")
+                    )
+                ),
+                tabPanel(
+                    "NewHist",
+                    fluidPage(
+                        histogramUI("hist")
                     )
                 )
             )

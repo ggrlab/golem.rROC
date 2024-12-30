@@ -12,7 +12,7 @@ app_server <- function(input, output, session) {
     # Set the initial value for current_data
     current_data(glehr2023_cd4_cd8_relative[, -1])
 
-    
+
     current_data_table <- reactive({
         if (is.null(current_data())) {
             return(NULL)
@@ -121,6 +121,22 @@ app_server <- function(input, output, session) {
     observe_dv_iv_selection(input, session, dv_selector, iv_selector, all_cols)
     observe_rroc_calculation(input, current_data, rroc_result, possible_positive_labels)
     observe_rroc_plot_update(input, rroc_result, current_data, redo_plot, listen_iv_dv_first)
+
+    # Modules
+    server_histogram("hist1")
+    server_histogram("hist2")
+    # data <- datasetServer("dataset")
+    # # output$data <- renderTable(head(data()))
+    # var <- selectVarServer("var", data, filter = is.numeric)
+    # output$out <- renderPrint(var())
+
+    # data <- datasetServer("data")
+    # x <- selectVarServer("var", data)
+    # histogramServer("hist", x)
+    data <- datasetServer("data")
+    y <- selectFilterServer("filter")
+    x <- selectVarServer("var", data, filter=y)
+    histogramServer("hist", x$value, x$name)
 }
 
 #' Initialize shared data
