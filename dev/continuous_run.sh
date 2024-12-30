@@ -5,7 +5,8 @@ WATCH_DIR="R/"
 
 # Command to run the R script
 
-R_SCRIPT="./dev/app.R"
+# R_SCRIPT="./dev/app.R"
+R_SCRIPT="./dev/run_dev.R"
 
 # Function to start the R script
 restart_r_script() {
