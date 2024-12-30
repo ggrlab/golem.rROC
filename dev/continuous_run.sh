@@ -22,7 +22,11 @@ restart_r_script() {
 restart_r_script
 
 # Monitor the folder for changes
-inotifywait -m -e close_write "$WATCH_DIR" | while read -r path event file; do
-    echo "Detected change in $file. Restarting R script..."
+inotifywait --monitor \
+    --recursive \
+    --event=close_write \
+    --format='%T' \
+    --timefmt='%s' $WATCH_DIR | while read -r file_event; do
+    echo "Detected change in $file, event: ${file_event}. Restarting R script..."
     restart_r_script
 done
