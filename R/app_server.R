@@ -26,6 +26,17 @@ app_server <- function(input, output, session) {
     output$ui_data <- shiny::renderUI({
         render_data_ui()
     })
+
+
+    # Data preview
+    output$data_preview <- DT::renderDT({
+        render_data_preview(input, current_data_table)
+    })
+
+    # Full data preview
+    output$data_preview_full <- DT::renderDT({
+        render_data_preview_full(input, current_data_table)
+    })
 }
 
 #' Initialize shared data
@@ -118,4 +129,47 @@ render_data_ui <- function() {
             actionButton("reload_data", "Reload", icon = icon("upload", verify_fa = FALSE))
         )
     )
+}
+
+
+#' Reactive value for current data table
+#'
+#' @return A reactive value for the current data table
+current_data_table <- reactive({
+    if (is.null(current_data())) {
+        return(NULL)
+    }
+    if (is.data.frame(current_data())) {
+        return(current_data())
+    } else if (is.list(current_data())) {
+        df_long <- data.table::rbindlist(current_data(), idcol = "group")
+        colnames(df_long) <- c("group", "value")
+        return(df_long)
+    }
+})
+current_data <- reactiveVal()
+
+
+#' Render data preview
+#'
+#' @param input Shiny input object
+#' @param current_data_table Reactive value for current data table
+#' @return A data table preview
+render_data_preview <- function(input, current_data_table) {
+    if (length(input$selected_data_type) == 0) {
+        return()
+    }
+    current_data_table()[, seq_len(min(ncol(current_data_table()), 6))]
+}
+
+#' Render full data preview
+#'
+#' @param input Shiny input object
+#' @param current_data_table Reactive value for current data table
+#' @return A full data table preview
+render_data_preview_full <- function(input, current_data_table) {
+    if (length(input$selected_data_type) == 0) {
+        return()
+    }
+    current_data_table()
 }
