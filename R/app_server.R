@@ -7,7 +7,12 @@
 app_server <- function(input, output, session) {
     # https://rstudio.github.io/shiny/reference/ExtendedTask.html
 
-    ## Initialize reactives
+    #### Initialize reactives
+    current_data <- reactiveVal()
+    # Set the initial value for current_data
+    current_data(glehr2023_cd4_cd8_relative[, -1])
+
+    
     current_data_table <- reactive({
         if (is.null(current_data())) {
             return(NULL)
@@ -20,7 +25,6 @@ app_server <- function(input, output, session) {
             return(df_long)
         }
     })
-    current_data <- reactiveVal()
     # Restriction userinterface
     all_cols <- reactive({
         names(current_data())
@@ -34,7 +38,8 @@ app_server <- function(input, output, session) {
     })
     redo_plot <- reactiveVal(list("dv" = "", "iv" = ""))
     rroc_result <- reactiveVal()
-
+    # Initialize rroc_result with a small example
+    rroc_result(frontiers110_tcell_relative__permutation_10k_small)
     # Reactive value for restriction performance
     restriction_perf <- reactive({
         perf_table <- restrictedROC:::summary.rROC(rroc_result())
@@ -53,50 +58,43 @@ app_server <- function(input, output, session) {
         )
     })
 
-    # Initialize shared data
+    #### Initialize shared data
     r_data <- initialize_shared_data()
 
+    #### Variable UIs
     # File upload UI
     output$ui_fileUpload <- shiny::renderUI({
         shiny::req(input$selected_data_type)
         uploadfile_fun(input$selected_data_type)
     })
-
     # Clipboard UI
     output$ui_load_clipboard <- shiny::renderUI({
         render_clipboard_ui()
     })
-
     # Data UI
     output$ui_data <- shiny::renderUI({
         render_data_ui()
     })
-
-
     # Data preview
     output$data_preview <- DT::renderDT({
         render_data_preview(input, current_data_table)
     })
-
     # Full data preview
     output$data_preview_full <- DT::renderDT({
         render_data_preview_full(input, current_data_table)
     })
-
-
     # Restriction UI
     output$ui_dvs <- shiny::renderUI({
         render_dvs_ui(all_cols)
     })
-
     output$ui_ivs <- shiny::renderUI({
         render_ivs_ui(all_cols, input)
     })
-
     output$ui_positive_labels <- shiny::renderUI({
         render_positive_labels_ui(possible_positive_labels)
     })
 
+    #### Plots and Tables
     # Restriction plot
     output$rroc_plot <- renderPlot({
         render_rroc_plot(redo_plot, rroc_result, current_data, input)
@@ -107,7 +105,7 @@ app_server <- function(input, output, session) {
         restriction_perf()
     })
 
-    # Download handler
+    #### Buttons
     output$download_rroc <- downloadHandler(
         filename = function() {
             "RestrictionPerformance.xlsx"
