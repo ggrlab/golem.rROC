@@ -110,7 +110,13 @@ app_server <- function(input, output, session) {
     # Modules
     # Give current_data as reactive input to the module (without "evaluation" brackets)
     previewDataServer("preview", current_data)
-    newDataServer("newdata", current_data)
+    newDataServer(
+        "newdata",
+        current_data,
+        rroc_result,
+        possible_data_types = c("csv", "clipboard", "glehr2023")
+    )
+
     rroc_selector <- calc_rroc_server("calc_rroc_selector", current_data, rroc_result)
     report_rroc_server(
         "report_rroc",

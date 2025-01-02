@@ -1,8 +1,9 @@
 newDataUI <- function(id) {
     uiOutput(NS(id, "ui_data"))
 }
-newDataServer <- function(id, data00, possible_data_types = c("csv", "clipboard", "glehr2023")) {
+newDataServer <- function(id, data00, rroc_results, possible_data_types = c("csv", "clipboard", "glehr2023")) {
     stopifnot(shiny::is.reactive(data00))
+    stopifnot(shiny::is.reactive(rroc_results))
     moduleServer(
         id,
         function(input, output, session) {
@@ -31,12 +32,12 @@ newDataServer <- function(id, data00, possible_data_types = c("csv", "clipboard"
                     return()
                 }
                 data00(NULL)
-                # rroc_result(NULL)
+                rroc_results(NULL)
 
 
                 if (input$selected_data_type == "glehr2023") {
                     data00(glehr2023_cd4_cd8_relative[, -1])
-                    # rroc_result(frontiers110_tcell_relative__permutation_10k)
+                    rroc_results(frontiers110_tcell_relative__permutation_10k)
                     return()
                 } else {
                     data00(
