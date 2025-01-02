@@ -12,16 +12,16 @@ app_server <- function(input, output, session) {
     current_data(glehr2023_cd4_cd8_relative[, -1])
 
     # Restriction userinterface
-    all_cols <- reactive({
-        names(current_data())
-    })
-    possible_positive_labels <- reactive({
-        if (length(input$dependent_vars) != 1) {
-            return(NULL)
-        } else {
-            return(unique(current_data()[[input$dependent_vars]]))
-        }
-    })
+    # all_cols <- reactive({
+    #     names(current_data())
+    # })
+    # possible_positive_labels <- reactive({
+    #     if (length(input$dependent_vars) != 1) {
+    #         return(NULL)
+    #     } else {
+    #         return(unique(current_data()[[input$dependent_vars]]))
+    #     }
+    # })
     redo_plot <- reactiveVal(list("dv" = "", "iv" = ""))
     rroc_result <- reactiveVal()
     # Initialize rroc_result with a small example
@@ -69,16 +69,16 @@ app_server <- function(input, output, session) {
     # output$data_preview_full <- DT::renderDT({
     #     render_data_preview_full(input, current_data_table)
     # })
-    # Restriction UI
-    output$ui_dvs <- shiny::renderUI({
-        render_dvs_ui(all_cols)
-    })
-    output$ui_ivs <- shiny::renderUI({
-        render_ivs_ui(all_cols, input)
-    })
-    output$ui_positive_labels <- shiny::renderUI({
-        render_positive_labels_ui(possible_positive_labels)
-    })
+    # # Restriction UI
+    # output$ui_dvs <- shiny::renderUI({
+    #     render_dvs_ui(all_cols)
+    # })
+    # output$ui_ivs <- shiny::renderUI({
+    #     render_ivs_ui(all_cols, input)
+    # })
+    # output$ui_positive_labels <- shiny::renderUI({
+    #     render_positive_labels_ui(possible_positive_labels)
+    # })
 
     #### Plots and Tables
     # Restriction plot
@@ -112,6 +112,7 @@ app_server <- function(input, output, session) {
     # GIve current_data as reactive input to the module (without "evaluation" brackets)
     previewDataServer("preview", current_data)
     newDataServer("newdata", current_data)
+    calc_rroc_server("calc_rroc_selector", current_data, rroc_result)
 }
 
 #' Initialize shared data
