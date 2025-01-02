@@ -29,50 +29,6 @@ app_ui <- function(request) {
                         mainPanel = mainPanel(previewDataUI("preview"))
                     )
                 ),
-                # tabPanel(
-                #     "HistogramModule duplicate",
-                #     ui_histogram("hist1")
-                # ),
-                # tabPanel(
-                #     "HistogramModule NOdup",
-                #     ui_histogram("hist2")
-                # ),
-                # tabPanel(
-                #     "DatasetModule",
-                #     fluidPage(
-                #         datasetInput("dataset", filter = NULL),
-                #         tableOutput("data")
-                #     )
-                # ),
-                # tabPanel(
-                #     "SelectVarModule",
-                #     fluidPage(
-                #         datasetInput("data", is.data.frame),
-                #         selectVarInput("var"),
-                #         verbatimTextOutput("out")
-                #     )
-                # ),
-                # tabPanel(
-                #     "NewHist",
-                #     fluidPage(
-                #         histogramUI("hist")
-                #     )
-                # ),
-                # tabPanel(
-                #     "asdf",
-                #     fluidPage(
-                #         sidebarLayout(
-                #             sidebarPanel(
-                #                 datasetInput("data", is.data.frame),
-                #                 textOutput("n"),
-                #                 filterUI("filter"),
-                #             ),
-                #             mainPanel(
-                #                 tableOutput("table")
-                #             )
-                #         )
-                #     )
-                # )
             )
         )
     )
