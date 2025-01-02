@@ -18,14 +18,7 @@ app_ui <- function(request) {
                             calc_rroc_ui("calc_rroc_selector"),
                         ),
                         mainPanel(
-                            tabPanel(
-                                "Plot",
-                                h2("Restriction"),
-                                plotOutput("rroc_plot"),
-                                # Make a downloadable DT table
-                                DT::DTOutput("restriction_performances"),
-                                downloadButton("download_rroc", "Download")
-                            )
+                            report_rroc_ui("report_rroc")
                         )
                     )
                 ),
