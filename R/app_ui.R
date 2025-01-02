@@ -15,7 +15,7 @@ app_ui <- function(request) {
                     "Restriction",
                     sidebarLayout(
                         sidebarPanel(
-                            shiny::wellPanel(
+                            list(
                                 uiOutput("ui_dvs"),
                                 actionButton("dv_DEselect_all", "De/select  asdf all DV"),
                                 uiOutput("ui_ivs"),
@@ -45,54 +45,54 @@ app_ui <- function(request) {
                 tabPanel(
                     "New Data",
                     sidebarLayout(
-                        sidebarPanel(
-                            uiOutput("ui_data"),
-                            width = 3
-                        ),
-                        mainPanel(
-                            tabsetPanel(
-                                id = "tabs_data",
-                                tabPanel(
-                                    "View first 6 columns",
-                                    DT::DTOutput("data_preview")
-                                ),
-                                tabPanel(
-                                    "View full",
-                                    DT::DTOutput("data_preview_full")
-                                )
-                            )
-                        )
+                        sidebarPanel = shiny::fluidPage(),
+                        mainPanel = previewDataUI("preview")
                     )
                 ),
-                tabPanel(
-                    "HistogramModule duplicate",
-                    ui_histogram("hist1")
-                ),
-                tabPanel(
-                    "HistogramModule NOdup",
-                    ui_histogram("hist2")
-                ),
-                tabPanel(
-                    "DatasetModule",
-                    fluidPage(
-                        datasetInput("dataset", filter = NULL),
-                        tableOutput("data")
-                    )
-                ),
-                tabPanel(
-                    "SelectVarModule",
-                    fluidPage(
-                        datasetInput("data", is.data.frame),
-                        selectVarInput("var"),
-                        verbatimTextOutput("out")
-                    )
-                ),
-                tabPanel(
-                    "NewHist",
-                    fluidPage(
-                        histogramUI("hist")
-                    )
-                )
+                # tabPanel(
+                #     "HistogramModule duplicate",
+                #     ui_histogram("hist1")
+                # ),
+                # tabPanel(
+                #     "HistogramModule NOdup",
+                #     ui_histogram("hist2")
+                # ),
+                # tabPanel(
+                #     "DatasetModule",
+                #     fluidPage(
+                #         datasetInput("dataset", filter = NULL),
+                #         tableOutput("data")
+                #     )
+                # ),
+                # tabPanel(
+                #     "SelectVarModule",
+                #     fluidPage(
+                #         datasetInput("data", is.data.frame),
+                #         selectVarInput("var"),
+                #         verbatimTextOutput("out")
+                #     )
+                # ),
+                # tabPanel(
+                #     "NewHist",
+                #     fluidPage(
+                #         histogramUI("hist")
+                #     )
+                # ),
+                # tabPanel(
+                #     "asdf",
+                #     fluidPage(
+                #         sidebarLayout(
+                #             sidebarPanel(
+                #                 datasetInput("data", is.data.frame),
+                #                 textOutput("n"),
+                #                 filterUI("filter"),
+                #             ),
+                #             mainPanel(
+                #                 tableOutput("table")
+                #             )
+                #         )
+                #     )
+                # )
             )
         )
     )
