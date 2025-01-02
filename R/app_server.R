@@ -26,23 +26,23 @@ app_server <- function(input, output, session) {
     rroc_result <- reactiveVal()
     # Initialize rroc_result with a small example
     rroc_result(frontiers110_tcell_relative__permutation_10k_small)
-    # Reactive value for restriction performance
-    restriction_perf <- reactive({
-        perf_table <- restrictedROC:::summary.rROC(rroc_result())
-        if (!is.null(perf_table) & !any(sapply(listen_iv_dv_first(), is.null))) {
-            perf_table <- perf_table[order(
-                sub(listen_iv_dv_first()[[1]], "", perf_table[["level_1"]], fixed = TRUE),
-                sub(listen_iv_dv_first()[[2]], "", perf_table[["level_2"]], fixed = TRUE)
-            ), ]
-        }
-        return(perf_table)
-    })
-    listen_iv_dv_first <- reactive({
-        list(
-            "dv" = input$dependent_vars[1],
-            "iv" = input$independent_vars[1]
-        )
-    })
+    # # Reactive value for restriction performance
+    # restriction_perf <- reactive({
+    #     perf_table <- restrictedROC:::summary.rROC(rroc_result())
+    #     if (!is.null(perf_table) & !any(sapply(listen_iv_dv_first(), is.null))) {
+    #         perf_table <- perf_table[order(
+    #             sub(listen_iv_dv_first()[[1]], "", perf_table[["level_1"]], fixed = TRUE),
+    #             sub(listen_iv_dv_first()[[2]], "", perf_table[["level_2"]], fixed = TRUE)
+    #         ), ]
+    #     }
+    #     return(perf_table)
+    # })
+    # listen_iv_dv_first <- reactive({
+    #     list(
+    #         "dv" = input$dependent_vars[1],
+    #         "iv" = input$independent_vars[1]
+    #     )
+    # })
 
     #### Initialize shared data
     r_data <- initialize_shared_data()
@@ -86,27 +86,27 @@ app_server <- function(input, output, session) {
         render_rroc_plot(redo_plot, rroc_result, current_data, input)
     })
 
-    # Restriction performances
-    output$restriction_performances <- DT::renderDT({
-        restriction_perf()
-    })
+    # # Restriction performances
+    # output$restriction_performances <- DT::renderDT({
+    #     restriction_perf()
+    # })
 
-    #### Buttons
-    output$download_rroc <- downloadHandler(
-        filename = function() {
-            "RestrictionPerformance.xlsx"
-        },
-        content = function(fname) {
-            download_restriction_performance(restriction_perf, fname)
-        }
-    )
+    # #### Buttons
+    # output$download_rroc <- downloadHandler(
+    #     filename = function() {
+    #         "RestrictionPerformance.xlsx"
+    #     },
+    #     content = function(fname) {
+    #         download_restriction_performance(restriction_perf, fname)
+    #     }
+    # )
 
     # # Observers
     # observe_data_upload(input, current_data, rroc_result)
     # observe_clipboard_data(input, current_data)
     # observe_dv_iv_selection(input, session, dv_selector, iv_selector, all_cols)
-    observe_rroc_calculation(input, current_data, rroc_result, possible_positive_labels)
-    observe_rroc_plot_update(input, rroc_result, current_data, redo_plot, listen_iv_dv_first)
+    # observe_rroc_calculation(input, current_data, rroc_result, possible_positive_labels)
+    # observe_rroc_plot_update(input, rroc_result, current_data, redo_plot, listen_iv_dv_first)
 
     # Modules
     # GIve current_data as reactive input to the module (without "evaluation" brackets)
@@ -287,99 +287,99 @@ download_restriction_performance <- function(restriction_perf, fname) {
     }
 }
 
-##### Observers
-#' Observe RROC calculation
-#'
-#' @param input Shiny input object
-#' @param current_data Reactive value for current data
-#' @param rroc_result Reactive value for RROC result
-#' @param possible_positive_labels Reactive value for possible positive labels
-observe_rroc_calculation <- function(input, current_data, rroc_result, possible_positive_labels) {
-    observeEvent(input$run_rroc, {
-        shiny::withProgress(
-            message = "Calculating restriction...",
-            detail = "",
-            value = 0,
-            {
-                dv <- input$dependent_vars
-                iv <- input$independent_vars
-                if (length(dv) == 0) {
-                    warning("No dependent variable selected")
-                    return()
-                }
-                if (length(iv) == 0) {
-                    warning("No independent variable selected")
-                    return()
-                }
-                pos_label <- 1
-                if (input$positive_label != "") {
-                    pos_label <- input$positive_label
-                }
-                if (is.null(rroc_result())) {
-                    rroc_res_tmp <- rroc_secure(
-                        df = current_data(),
-                        dependent_vars = input$dependent_vars,
-                        independent_vars = input$independent_vars,
-                        do_plots = TRUE,
-                        n_permutations = max(input$n_permutations, 0),
-                        positive_label = pos_label,
-                        parallel_permutations = FALSE
-                    )
-                } else {
-                    if (input$recalculate_rroc) {
-                        new_dv_iv <- sapply(dv, function(x) iv, simplify = FALSE)
-                    } else {
-                        dvs_ivs_existing <- lapply(rroc_result(), names)
-                        new_dv_iv <- sapply(input$dependent_vars, function(dv_x) {
-                            iv[!iv %in% dvs_ivs_existing[[dv_x]]]
-                        }, simplify = FALSE)
-                    }
-                    rroc_res_tmp <- sapply(names(new_dv_iv), function(dv_x) {
-                        if (length(new_dv_iv[[dv_x]]) == 0) {
-                            return(NULL)
-                        }
-                        tmp <- sapply(new_dv_iv[[dv_x]], function(iv_x) {
-                            return(
-                                rroc_secure(
-                                    df = current_data(),
-                                    dependent_vars = dv_x,
-                                    independent_vars = iv_x,
-                                    do_plots = TRUE,
-                                    n_permutations = max(input$n_permutations, 0),
-                                    positive_label = pos_label,
-                                    parallel_permutations = FALSE
-                                )[[dv_x]][[iv_x]]
-                            )
-                        }, simplify = FALSE)
-                        return(tmp)
-                    }, simplify = FALSE)
-                    rroc_res_tmp <- rroc_res_tmp[!all(is.null(rroc_res_tmp))]
-                }
+# ##### Observers
+# #' Observe RROC calculation
+# #'
+# #' @param input Shiny input object
+# #' @param current_data Reactive value for current data
+# #' @param rroc_result Reactive value for RROC result
+# #' @param possible_positive_labels Reactive value for possible positive labels
+# observe_rroc_calculation <- function(input, current_data, rroc_result, possible_positive_labels) {
+#     observeEvent(input$run_rroc, {
+#         shiny::withProgress(
+#             message = "Calculating restriction...",
+#             detail = "",
+#             value = 0,
+#             {
+#                 dv <- input$dependent_vars
+#                 iv <- input$independent_vars
+#                 if (length(dv) == 0) {
+#                     warning("No dependent variable selected")
+#                     return()
+#                 }
+#                 if (length(iv) == 0) {
+#                     warning("No independent variable selected")
+#                     return()
+#                 }
+#                 pos_label <- 1
+#                 if (input$positive_label != "") {
+#                     pos_label <- input$positive_label
+#                 }
+#                 if (is.null(rroc_result())) {
+#                     rroc_res_tmp <- rroc_secure(
+#                         df = current_data(),
+#                         dependent_vars = input$dependent_vars,
+#                         independent_vars = input$independent_vars,
+#                         do_plots = TRUE,
+#                         n_permutations = max(input$n_permutations, 0),
+#                         positive_label = pos_label,
+#                         parallel_permutations = FALSE
+#                     )
+#                 } else {
+#                     if (input$recalculate_rroc) {
+#                         new_dv_iv <- sapply(dv, function(x) iv, simplify = FALSE)
+#                     } else {
+#                         dvs_ivs_existing <- lapply(rroc_result(), names)
+#                         new_dv_iv <- sapply(input$dependent_vars, function(dv_x) {
+#                             iv[!iv %in% dvs_ivs_existing[[dv_x]]]
+#                         }, simplify = FALSE)
+#                     }
+#                     rroc_res_tmp <- sapply(names(new_dv_iv), function(dv_x) {
+#                         if (length(new_dv_iv[[dv_x]]) == 0) {
+#                             return(NULL)
+#                         }
+#                         tmp <- sapply(new_dv_iv[[dv_x]], function(iv_x) {
+#                             return(
+#                                 rroc_secure(
+#                                     df = current_data(),
+#                                     dependent_vars = dv_x,
+#                                     independent_vars = iv_x,
+#                                     do_plots = TRUE,
+#                                     n_permutations = max(input$n_permutations, 0),
+#                                     positive_label = pos_label,
+#                                     parallel_permutations = FALSE
+#                                 )[[dv_x]][[iv_x]]
+#                             )
+#                         }, simplify = FALSE)
+#                         return(tmp)
+#                     }, simplify = FALSE)
+#                     rroc_res_tmp <- rroc_res_tmp[!all(is.null(rroc_res_tmp))]
+#                 }
 
-                if (is.null(rroc_result())) {
-                    rroc_result(rroc_res_tmp)
-                } else if (all(is.null(rroc_res_tmp)) || all(sapply(rroc_res_tmp, is.null))) {
-                    print("All results have been calculated before already")
-                } else {
-                    new_rroc <- rroc_result()
-                    for (dv_x in names(rroc_res_tmp)) {
-                        if (!dv_x %in% names(rroc_result())) {
-                            new_rroc[[dv_x]] <- rroc_res_tmp[[dv_x]]
-                        } else {
-                            for (iv_x in names(rroc_res_tmp[[dv_x]])) {
-                                new_rroc[[dv_x]][[iv_x]] <- rroc_res_tmp[[dv_x]][[iv_x]]
-                            }
-                        }
-                    }
-                    rroc_result(new_rroc)
-                }
-                output$restriction_plot <- renderPlot({
-                    rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]]
-                })
-            }
-        )
-    })
-}
+#                 if (is.null(rroc_result())) {
+#                     rroc_result(rroc_res_tmp)
+#                 } else if (all(is.null(rroc_res_tmp)) || all(sapply(rroc_res_tmp, is.null))) {
+#                     print("All results have been calculated before already")
+#                 } else {
+#                     new_rroc <- rroc_result()
+#                     for (dv_x in names(rroc_res_tmp)) {
+#                         if (!dv_x %in% names(rroc_result())) {
+#                             new_rroc[[dv_x]] <- rroc_res_tmp[[dv_x]]
+#                         } else {
+#                             for (iv_x in names(rroc_res_tmp[[dv_x]])) {
+#                                 new_rroc[[dv_x]][[iv_x]] <- rroc_res_tmp[[dv_x]][[iv_x]]
+#                             }
+#                         }
+#                     }
+#                     rroc_result(new_rroc)
+#                 }
+#                 output$restriction_plot <- renderPlot({
+#                     rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]]
+#                 })
+#             }
+#         )
+#     })
+# }
 
 #' Observe RROC plot update
 #'
