@@ -1,6 +1,5 @@
 newDataUI <- function(id) {
     uiOutput(NS(id, "ui_data"))
-    # uiOutput(ns("controls"))
 }
 newDataServer <- function(id, data00, possible_data_types = c("csv", "clipboard", "glehr2023")) {
     stopifnot(shiny::is.reactive(data00))
@@ -9,59 +8,18 @@ newDataServer <- function(id, data00, possible_data_types = c("csv", "clipboard"
         function(input, output, session) {
             ##### UIs
             # File upload UI
-            uploadfile_fun <- function(accept) {
-                fileInput(NS(id, "uploadfile"), NULL, multiple = FALSE, accept = accept)
-            }
             output$ui_fileUpload <- shiny::renderUI({
-                ns <- session$ns
-                shiny::req(input$selected_data_type)
-                if (input$selected_data_type == "csv") {
-                    uploadfile_fun(
-                        accept = c(
-                            "text/csv",
-                            "text/comma-separated-values",
-                            "text/tab-separated-values",
-                            "text/plain",
-                            ".csv",
-                            ".tsv"
-                        )
-                    )
-                } else if (any(sapply(c("rda", "rds", "Rdata"), grepl, input$selected_data_type))) {
-                    warning("NotImplemented for security reasons")
-                    # uploadfile_fun(accept = c(".rda", ".rds", ".rdata"))
-                } else if (input$selected_data_type == "clipboard") {
-                } else if (input$selected_data_type == "glehr2023") {
-                    # Do nothing.
-                } else if (input$selected_data_type == "qs") {
-                    warning("NotImplemented for security reasons")
-                } else {
-                    stop("Invalid data type")
-                }
+                render_fileupload_ui(id, input)
             })
             # Clipboard UI
             output$ui_load_clipboard <- shiny::renderUI({
-                shiny::tagList(
-                    shiny::renderText("Copy-and-paste data below:"),
-                    textAreaInput(
-                        NS(id, "clipboard_groupA"), "Group A",
-                        rows = 5, resize = "vertical", value = "",
-                        placeholder = "1.31\n5.32\n40.2"
-                    ),
-                    textAreaInput(
-                        NS(id, "clipboard_groupB"), "Group B",
-                        rows = 5, resize = "vertical", value = "",
-                        placeholder = "1.31\n5.32\n40.2"
-                    ),
-                    br(),
-                    actionButton(NS(id, "loadClipData"), "Paste", icon = icon("paste", verify_fa = FALSE))
-                )
+                render_clipboard_ui(id)
             })
             output$ui_data <- shiny::renderUI({
                 render_data_ui(id, possible_data_types)
             })
 
-            # ##### Observers
-
+            ##### Observers
             toListen <- reactive({
                 list(
                     # input$uploadfile,
@@ -185,4 +143,33 @@ render_clipboard_ui <- function(id) {
         br(),
         actionButton(NS(id, "loadClipData"), "Paste", icon = icon("paste", verify_fa = FALSE))
     )
+}
+
+render_fileupload_ui <- function(id, input) {
+    uploadfile_fun <- function(accept) {
+        fileInput(NS(id, "uploadfile"), NULL, multiple = FALSE, accept = accept)
+    }
+    shiny::req(input$selected_data_type)
+    if (input$selected_data_type == "csv") {
+        uploadfile_fun(
+            accept = c(
+                "text/csv",
+                "text/comma-separated-values",
+                "text/tab-separated-values",
+                "text/plain",
+                ".csv",
+                ".tsv"
+            )
+        )
+    } else if (any(sapply(c("rda", "rds", "Rdata"), grepl, input$selected_data_type))) {
+        warning("NotImplemented for security reasons")
+        # uploadfile_fun(accept = c(".rda", ".rds", ".rdata"))
+    } else if (input$selected_data_type == "clipboard") {
+    } else if (input$selected_data_type == "glehr2023") {
+        # Do nothing.
+    } else if (input$selected_data_type == "qs") {
+        warning("NotImplemented for security reasons")
+    } else {
+        stop("Invalid data type")
+    }
 }
