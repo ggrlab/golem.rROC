@@ -64,6 +64,14 @@ calc_rroc_server <- function(id, data00, rroc_results) {
                 )
             }
         })
+
+        listen_iv_dv_first <- reactive({
+            list(
+                "dv" = input$dependent_vars[1],
+                "iv" = input$independent_vars[1]
+            )
+        })
+        observe_rroc_calculation(input, output, data00, rroc_results, possible_positive_labels)
     })
 }
 
@@ -99,6 +107,97 @@ rroc_ui_selection <- function(id, input, output, all_cols, possible_positive_lab
             label = "Positive label:",
             choices = possible_positive_labels(),
             selected = "group_A"
+        )
+    })
+}
+
+observe_rroc_calculation <- function(input,output, data00, rroc_result, possible_positive_labels) {
+    stopifnot(is.reactive(data00))
+    stopifnot(is.reactive(rroc_result))
+    stopifnot(is.reactive(possible_positive_labels))
+
+    observeEvent(input$run_rroc, {
+        shiny::withProgress(
+            message = "Calculating restriction...",
+            detail = "",
+            value = 0,
+            {
+                dv <- input$dependent_vars
+                iv <- input$independent_vars
+                if (length(dv) == 0) {
+                    warning("No dependent variable selected")
+                    return()
+                }
+                if (length(iv) == 0) {
+                    warning("No independent variable selected")
+                    return()
+                }
+                pos_label <- 1
+                if (input$positive_label != "") {
+                    pos_label <- input$positive_label
+                }
+                if (is.null(rroc_result())) {
+                    rroc_res_tmp <- rroc_secure(
+                        df = data00(),
+                        dependent_vars = input$dependent_vars,
+                        independent_vars = input$independent_vars,
+                        do_plots = TRUE,
+                        n_permutations = max(input$n_permutations, 0),
+                        positive_label = pos_label,
+                        parallel_permutations = FALSE
+                    )
+                } else {
+                    if (input$recalculate_rroc) {
+                        new_dv_iv <- sapply(dv, function(x) iv, simplify = FALSE)
+                    } else {
+                        dvs_ivs_existing <- lapply(rroc_result(), names)
+                        new_dv_iv <- sapply(input$dependent_vars, function(dv_x) {
+                            iv[!iv %in% dvs_ivs_existing[[dv_x]]]
+                        }, simplify = FALSE)
+                    }
+                    rroc_res_tmp <- sapply(names(new_dv_iv), function(dv_x) {
+                        if (length(new_dv_iv[[dv_x]]) == 0) {
+                            return(NULL)
+                        }
+                        tmp <- sapply(new_dv_iv[[dv_x]], function(iv_x) {
+                            return(
+                                rroc_secure(
+                                    df = data00(),
+                                    dependent_vars = dv_x,
+                                    independent_vars = iv_x,
+                                    do_plots = TRUE,
+                                    n_permutations = max(input$n_permutations, 0),
+                                    positive_label = pos_label,
+                                    parallel_permutations = FALSE
+                                )[[dv_x]][[iv_x]]
+                            )
+                        }, simplify = FALSE)
+                        return(tmp)
+                    }, simplify = FALSE)
+                    rroc_res_tmp <- rroc_res_tmp[!all(is.null(rroc_res_tmp))]
+                }
+
+                if (is.null(rroc_result())) {
+                    rroc_result(rroc_res_tmp)
+                } else if (all(is.null(rroc_res_tmp)) || all(sapply(rroc_res_tmp, is.null))) {
+                    print("All results have been calculated before already")
+                } else {
+                    new_rroc <- rroc_result()
+                    for (dv_x in names(rroc_res_tmp)) {
+                        if (!dv_x %in% names(rroc_result())) {
+                            new_rroc[[dv_x]] <- rroc_res_tmp[[dv_x]]
+                        } else {
+                            for (iv_x in names(rroc_res_tmp[[dv_x]])) {
+                                new_rroc[[dv_x]][[iv_x]] <- rroc_res_tmp[[dv_x]][[iv_x]]
+                            }
+                        }
+                    }
+                    rroc_result(new_rroc)
+                }
+                output$restriction_plot <- renderPlot({
+                    rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]]
+                })
+            }
         )
     })
 }
