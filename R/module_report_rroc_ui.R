@@ -92,7 +92,7 @@ observe_rroc_plot_update <- function(rroc_result, data00, redo_plot, listen_iv_d
             if (iv == "" || dv == "" || length(dv) == 0 || length(iv) == 0) {
                 # pass
             } else {
-                cat("PLOTTING", unlist(listen_iv_dv_first()), "\n")
+                # cat("PLOTTING", unlist(listen_iv_dv_first()), "\n")
                 if (has_been_calculated(dv, iv, rroc_result) && !all(is.na(rroc_result()[[dv]][[iv]]))) {
                     if (is.null(rroc_result()[[dv]][[iv]][["plots"]][["plots"]])) {
                         tmp_plot <- restrictedROC::plot_density_rROC_empirical(
@@ -145,7 +145,12 @@ render_rroc_plot <- function(redo_plot, rroc_result, current_data) {
             ggplot2::annotate(
                 "text",
                 x = 0.5, y = 0.5,
-                label = "Restriction not calculated for this variable.\nHit 'Run restriction' to calculate it.",
+                label = paste0(
+                    "Restriction was not calculated for:\n",
+                    "Dependent variable:  '", dv, "'\n",
+                    "Independent variable:  '", iv, "'\n",
+                    "Hit 'Run restriction' to calculate it."
+                ),
                 size = 10
             ) +
             ggplot2::theme_void())
