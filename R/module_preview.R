@@ -22,6 +22,19 @@ previewDataUI <- function(id) {
 previewDataServer <- function(id, data) {
     stopifnot(is.reactive(data))
     moduleServer(id, function(input, output, session) {
+        current_data_table <- reactive({
+            if (is.null(data())) {
+                return(NULL)
+            }
+            if (is.data.frame(data())) {
+                return(data())
+            } else if (is.list(data())) {
+                df_long <- data.table::rbindlist(data(), idcol = "group")
+                colnames(df_long) <- c("group", "value")
+                return(df_long)
+            }
+        })
+
         output$data_preview <- DT::renderDT({
             data()[, seq_len(min(ncol(data()), 6))]
         })
