@@ -65,13 +65,23 @@ calc_rroc_server <- function(id, data00, rroc_results) {
             }
         })
 
-        listen_iv_dv_first <- reactive({
+        observe_rroc_calculation(input, output, data00, rroc_results, possible_positive_labels)
+        first_iv_and_dv <- reactive({
             list(
                 "dv" = input$dependent_vars[1],
                 "iv" = input$independent_vars[1]
             )
-        })
-        observe_rroc_calculation(input, output, data00, rroc_results, possible_positive_labels)
+            # The debounce is necessary because:
+            # If the user selects a new dependent variable, all independent variables are updated
+            # --> the first independent variable is selected
+            # --> Second invalidation of first_iv_and_dv
+            # Debounce prevents the second invalidation because it happens in less than 50ms
+        }) |> shiny::debounce(50)
+
+        return(list(
+            listen_iv_dv_first = first_iv_and_dv,
+            positive_label = reactive({input$positive_label})
+        ))
     })
 }
 
@@ -111,9 +121,9 @@ rroc_ui_selection <- function(id, input, output, all_cols, possible_positive_lab
     })
 }
 
-observe_rroc_calculation <- function(input,output, data00, rroc_result, possible_positive_labels) {
+observe_rroc_calculation <- function(input, output, data00, rroc_results, possible_positive_labels) {
     stopifnot(is.reactive(data00))
-    stopifnot(is.reactive(rroc_result))
+    stopifnot(is.reactive(rroc_results))
     stopifnot(is.reactive(possible_positive_labels))
 
     observeEvent(input$run_rroc, {
@@ -136,7 +146,7 @@ observe_rroc_calculation <- function(input,output, data00, rroc_result, possible
                 if (input$positive_label != "") {
                     pos_label <- input$positive_label
                 }
-                if (is.null(rroc_result())) {
+                if (is.null(rroc_results())) {
                     rroc_res_tmp <- rroc_secure(
                         df = data00(),
                         dependent_vars = input$dependent_vars,
@@ -150,7 +160,7 @@ observe_rroc_calculation <- function(input,output, data00, rroc_result, possible
                     if (input$recalculate_rroc) {
                         new_dv_iv <- sapply(dv, function(x) iv, simplify = FALSE)
                     } else {
-                        dvs_ivs_existing <- lapply(rroc_result(), names)
+                        dvs_ivs_existing <- lapply(rroc_results(), names)
                         new_dv_iv <- sapply(input$dependent_vars, function(dv_x) {
                             iv[!iv %in% dvs_ivs_existing[[dv_x]]]
                         }, simplify = FALSE)
@@ -177,14 +187,14 @@ observe_rroc_calculation <- function(input,output, data00, rroc_result, possible
                     rroc_res_tmp <- rroc_res_tmp[!all(is.null(rroc_res_tmp))]
                 }
 
-                if (is.null(rroc_result())) {
-                    rroc_result(rroc_res_tmp)
+                if (is.null(rroc_results())) {
+                    rroc_results(rroc_res_tmp)
                 } else if (all(is.null(rroc_res_tmp)) || all(sapply(rroc_res_tmp, is.null))) {
                     print("All results have been calculated before already")
                 } else {
-                    new_rroc <- rroc_result()
+                    new_rroc <- rroc_results()
                     for (dv_x in names(rroc_res_tmp)) {
-                        if (!dv_x %in% names(rroc_result())) {
+                        if (!dv_x %in% names(rroc_results())) {
                             new_rroc[[dv_x]] <- rroc_res_tmp[[dv_x]]
                         } else {
                             for (iv_x in names(rroc_res_tmp[[dv_x]])) {
@@ -192,10 +202,10 @@ observe_rroc_calculation <- function(input,output, data00, rroc_result, possible
                             }
                         }
                     }
-                    rroc_result(new_rroc)
+                    rroc_results(new_rroc)
                 }
                 output$restriction_plot <- renderPlot({
-                    rroc_result()[[dv[1]]][[iv[1]]][["plots"]][["plots"]]
+                    rroc_results()[[dv[1]]][[iv[1]]][["plots"]][["plots"]]
                 })
             }
         )
