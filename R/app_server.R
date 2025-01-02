@@ -48,15 +48,15 @@ app_server <- function(input, output, session) {
     r_data <- initialize_shared_data()
 
     #### Variable UIs
-    # File upload UI
-    output$ui_fileUpload <- shiny::renderUI({
-        shiny::req(input$selected_data_type)
-        uploadfile_fun(input$selected_data_type)
-    })
-    # Clipboard UI
-    output$ui_load_clipboard <- shiny::renderUI({
-        render_clipboard_ui()
-    })
+    # # File upload UI
+    # output$ui_fileUpload <- shiny::renderUI({
+    #     shiny::req(input$selected_data_type)
+    #     uploadfile_fun(input$selected_data_type)
+    # })
+    # # Clipboard UI
+    # output$ui_load_clipboard <- shiny::renderUI({
+    #     render_clipboard_ui()
+    # })
     # # # Data UI
     # output$ui_data <- shiny::renderUI({
     #     render_data_ui("moduleNewdata")
@@ -126,47 +126,47 @@ initialize_shared_data <- function() {
     return(r_data)
 }
 
-#' Generate file input UI based on selected data type
-#'
-#' @param selected_data_type The type of data selected by the user
-#' @return A file input UI element
-uploadfile_fun <- function(selected_data_type) {
-    if (selected_data_type == "csv") {
-        fileInput("uploadfile", NULL, multiple = FALSE, accept = c(
-            "text/csv",
-            "text/comma-separated-values",
-            "text/tab-separated-values",
-            "text/plain",
-            ".csv",
-            ".tsv"
-        ))
-    } else if (any(sapply(c("rda", "rds", "Rdata"), grepl, selected_data_type))) {
-        fileInput("uploadfile", NULL, multiple = FALSE, accept = c(".rda", ".rds", ".rdata"))
-    }
-}
+# #' Generate file input UI based on selected data type
+# #'
+# #' @param selected_data_type The type of data selected by the user
+# #' @return A file input UI element
+# uploadfile_fun <- function(selected_data_type) {
+#     if (selected_data_type == "csv") {
+#         fileInput("uploadfile", NULL, multiple = FALSE, accept = c(
+#             "text/csv",
+#             "text/comma-separated-values",
+#             "text/tab-separated-values",
+#             "text/plain",
+#             ".csv",
+#             ".tsv"
+#         ))
+#     } else if (any(sapply(c("rda", "rds", "Rdata"), grepl, selected_data_type))) {
+#         fileInput("uploadfile", NULL, multiple = FALSE, accept = c(".rda", ".rds", ".rdata"))
+#     }
+# }
 
 
 
-#' Render clipboard UI
-#'
-#' @return A UI element for clipboard input
-render_clipboard_ui <- function() {
-    shiny::tagList(
-        shiny::renderText("Copy-and-paste data below:"),
-        textAreaInput(
-            "clipboard_groupA", "Group A",
-            rows = 5, resize = "vertical", value = "",
-            placeholder = "1.31\n5.32\n40.2"
-        ),
-        textAreaInput(
-            "clipboard_groupB", "Group B",
-            rows = 5, resize = "vertical", value = "",
-            placeholder = "1.31\n5.32\n40.2"
-        ),
-        br(),
-        actionButton("loadClipData", "Paste", icon = icon("paste", verify_fa = FALSE))
-    )
-}
+# #' Render clipboard UI
+# #'
+# #' @return A UI element for clipboard input
+# render_clipboard_ui <- function() {
+#     shiny::tagList(
+#         shiny::renderText("Copy-and-paste data below:"),
+#         textAreaInput(
+#             "clipboard_groupA", "Group A",
+#             rows = 5, resize = "vertical", value = "",
+#             placeholder = "1.31\n5.32\n40.2"
+#         ),
+#         textAreaInput(
+#             "clipboard_groupB", "Group B",
+#             rows = 5, resize = "vertical", value = "",
+#             placeholder = "1.31\n5.32\n40.2"
+#         ),
+#         br(),
+#         actionButton("loadClipData", "Paste", icon = icon("paste", verify_fa = FALSE))
+#     )
+# }
 
 
 
