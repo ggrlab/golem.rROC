@@ -22,6 +22,10 @@ restart_r_script() {
 # Initial start of the R script
 restart_r_script
 
+# Wait for a ctrl-C to happen; 
+# then kill the R script and exit
+trap "pkill -f $R_SCRIPT; echo 'Killed Rscript'; exit" INT
+
 # Monitor the folder for changes
 inotifywait --monitor \
     --recursive \
