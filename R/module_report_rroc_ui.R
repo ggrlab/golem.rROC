@@ -85,30 +85,29 @@ observe_rroc_plot_update <- function(rroc_result, data00, redo_plot, listen_iv_d
     stopifnot(is.reactive(listen_iv_dv_first))
     stopifnot(is.reactive(positive_label))
 
-    observe(listen_iv_dv_first) |>
-        bindEvent({
-            dv <- listen_iv_dv_first()[["dv"]]
-            iv <- listen_iv_dv_first()[["iv"]]
-            if (iv == "" || dv == "" || length(dv) == 0 || length(iv) == 0) {
-                # pass
-            } else {
-                # cat("PLOTTING", unlist(listen_iv_dv_first()), "\n")
-                if (has_been_calculated(dv, iv, rroc_result) && !all(is.na(rroc_result()[[dv]][[iv]]))) {
-                    if (is.null(rroc_result()[[dv]][[iv]][["plots"]][["plots"]])) {
-                        tmp_plot <- restrictedROC::plot_density_rROC_empirical(
-                            values_grouped = split(data00()[[iv]], data00()[[dv]]),
-                            positive_label = positive_label()
-                        )
-                        tmp_rroc_res <- rroc_result()
-                        tmp_rroc_res[[dv]][[iv]][["plots"]][["plots"]] <- tmp_plot
-                        rroc_result(tmp_rroc_res)
-                        cat("    Restriction plot was recalculated\n")
-                    }
+    observeEvent(listen_iv_dv_first(), {
+        dv <- listen_iv_dv_first()[["dv"]]
+        iv <- listen_iv_dv_first()[["iv"]]
+        if (iv == "" || dv == "" || length(dv) == 0 || length(iv) == 0) {
+            # pass
+        } else {
+            # cat("PLOTTING", unlist(listen_iv_dv_first()), "\n")
+            if (has_been_calculated(dv, iv, rroc_result) && !all(is.na(rroc_result()[[dv]][[iv]]))) {
+                if (is.null(rroc_result()[[dv]][[iv]][["plots"]][["plots"]])) {
+                    tmp_plot <- restrictedROC::plot_density_rROC_empirical(
+                        values_grouped = split(data00()[[iv]], data00()[[dv]]),
+                        positive_label = positive_label()
+                    )
+                    tmp_rroc_res <- rroc_result()
+                    tmp_rroc_res[[dv]][[iv]][["plots"]][["plots"]] <- tmp_plot
+                    rroc_result(tmp_rroc_res)
+                    cat("    Restriction plot was recalculated\n")
                 }
-                redo_plot(listen_iv_dv_first())
             }
-            # })
-        })
+            redo_plot(listen_iv_dv_first())
+        }
+        # })
+    })
 }
 
 #' Check if RROC has been calculated

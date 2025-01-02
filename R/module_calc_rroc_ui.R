@@ -80,7 +80,9 @@ calc_rroc_server <- function(id, data00, rroc_results) {
 
         return(list(
             listen_iv_dv_first = first_iv_and_dv,
-            positive_label = reactive({input$positive_label})
+            positive_label = reactive({
+                input$positive_label
+            })
         ))
     })
 }
@@ -125,7 +127,7 @@ observe_rroc_calculation <- function(input, output, data00, rroc_results, possib
     stopifnot(is.reactive(data00))
     stopifnot(is.reactive(rroc_results))
     stopifnot(is.reactive(possible_positive_labels))
-
+    
     observeEvent(input$run_rroc, {
         shiny::withProgress(
             message = "Calculating restriction...",
