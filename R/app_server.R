@@ -6,25 +6,11 @@
 #' @noRd
 app_server <- function(input, output, session) {
     # https://rstudio.github.io/shiny/reference/ExtendedTask.html
-
     #### Initialize reactives
     current_data <- reactiveVal()
     # Set the initial value for current_data
     current_data(glehr2023_cd4_cd8_relative[, -1])
 
-
-    current_data_table <- reactive({
-        if (is.null(current_data())) {
-            return(NULL)
-        }
-        if (is.data.frame(current_data())) {
-            return(current_data())
-        } else if (is.list(current_data())) {
-            df_long <- data.table::rbindlist(current_data(), idcol = "group")
-            colnames(df_long) <- c("group", "value")
-            return(df_long)
-        }
-    })
     # Restriction userinterface
     all_cols <- reactive({
         names(current_data())
@@ -71,18 +57,18 @@ app_server <- function(input, output, session) {
     output$ui_load_clipboard <- shiny::renderUI({
         render_clipboard_ui()
     })
-    # Data UI
-    output$ui_data <- shiny::renderUI({
-        render_data_ui()
-    })
-    # Data preview
-    output$data_preview <- DT::renderDT({
-        render_data_preview(input, current_data_table)
-    })
-    # Full data preview
-    output$data_preview_full <- DT::renderDT({
-        render_data_preview_full(input, current_data_table)
-    })
+    # # # Data UI
+    # output$ui_data <- shiny::renderUI({
+    #     render_data_ui("moduleNewdata")
+    # })
+    # # Data preview
+    # output$data_preview <- DT::renderDT({
+    #     render_data_preview(input, current_data_table)
+    # })
+    # # Full data preview
+    # output$data_preview_full <- DT::renderDT({
+    #     render_data_preview_full(input, current_data_table)
+    # })
     # Restriction UI
     output$ui_dvs <- shiny::renderUI({
         render_dvs_ui(all_cols)
@@ -116,27 +102,16 @@ app_server <- function(input, output, session) {
     )
 
     # # Observers
-    observe_data_upload(input, current_data, rroc_result)
-    observe_clipboard_data(input, current_data)
-    observe_dv_iv_selection(input, session, dv_selector, iv_selector, all_cols)
+    # observe_data_upload(input, current_data, rroc_result)
+    # observe_clipboard_data(input, current_data)
+    # observe_dv_iv_selection(input, session, dv_selector, iv_selector, all_cols)
     observe_rroc_calculation(input, current_data, rroc_result, possible_positive_labels)
     observe_rroc_plot_update(input, rroc_result, current_data, redo_plot, listen_iv_dv_first)
 
     # Modules
-    server_histogram("hist1")
-    server_histogram("hist2")
-    # data <- datasetServer("dataset")
-    # # output$data <- renderTable(head(data()))
-    # var <- selectVarServer("var", data, filter = is.numeric)
-    # output$out <- renderPrint(var())
-
-    # data <- datasetServer("data")
-    # x <- selectVarServer("var", data)
-    # histogramServer("hist", x)
-    data <- datasetServer("data")
-    y <- selectFilterServer("filter")
-    x <- selectVarServer("var", data, filter=y)
-    histogramServer("hist", x$value, x$name)
+    # GIve current_data as reactive input to the module (without "evaluation" brackets)
+    previewDataServer("preview", current_data)
+    newDataServer("newdata", current_data)
 }
 
 #' Initialize shared data
@@ -193,71 +168,6 @@ render_clipboard_ui <- function() {
     )
 }
 
-#' Render data UI
-#'
-#' @return A UI element for data input
-render_data_ui <- function() {
-    possible_data_types <- c("csv", "clipboard", "glehr2023")
-    shiny::wellPanel(
-        shiny::selectInput("selected_data_type", label = "Load data of type:", possible_data_types, selected = "clipboard"),
-        shiny::conditionalPanel(
-            condition = "input.selected_data_type != 'clipboard'",
-            shiny::conditionalPanel(
-                "input.selected_data_type == 'csv'",
-                with(tags, table(
-                    td(shiny::selectInput("csv_sep", "Separator:", c(Comma = ",", Semicolon = ";", Tab = "\t"), ",", width = "100%")),
-                    td(shiny::selectInput("csv_dec", "Decimal:", c(Period = ".", Comma = ","), ".", width = "100%")),
-                    width = "100%"
-                )),
-                shiny::numericInput(
-                    "data_n_max",
-                    label = "Maximum rows to read:",
-                    value = 2000, max = Inf, step = 1000
-                )
-            ),
-            shiny::uiOutput("ui_fileUpload"),
-            br(),
-            actionButton("reload_data", "Reload", icon = icon("upload", verify_fa = FALSE))
-        ),
-        shiny::conditionalPanel(
-            condition = "input.selected_data_type == 'clipboard'",
-            shiny::uiOutput("ui_load_clipboard")
-        ),
-        shiny::conditionalPanel(
-            condition = "input.selected_data_type == 'glehr2023'",
-            br(),
-            actionButton("reload_data", "Reload", icon = icon("upload", verify_fa = FALSE))
-        )
-    )
-}
-
-#' Render data preview
-#'
-#' @param input Shiny input object
-#' @param current_data_table Reactive value for current data table
-#' @return A data table preview
-render_data_preview <- function(input, current_data_table) {
-    if (length(input$selected_data_type) == 0) {
-        return()
-    }
-    current_data_table()[, seq_len(min(ncol(current_data_table()), 6))]
-}
-
-
-
-
-
-#' Render full data preview
-#'
-#' @param input Shiny input object
-#' @param current_data_table Reactive value for current data table
-#' @return A full data table preview
-render_data_preview_full <- function(input, current_data_table) {
-    if (length(input$selected_data_type) == 0) {
-        return()
-    }
-    current_data_table()
-}
 
 
 
@@ -377,94 +287,6 @@ download_restriction_performance <- function(restriction_perf, fname) {
 }
 
 ##### Observers
-
-#' Observe data upload
-#'
-#' @param input Shiny input object
-#' @param current_data Reactive value for current data
-#' @param rroc_result Reactive value for RROC result
-observe_data_upload <- function(input, current_data, rroc_result) {
-    toListen <- reactive({
-        list(
-            input$uploadfile,
-            input$reload_data
-        )
-    })
-    observeEvent(toListen(), {
-        if (all(is.null(input$uploadfile))) {
-            return()
-        }
-        current_data(NULL)
-        rroc_result(NULL)
-
-        if (input$selected_data_type == "glehr2023") {
-            current_data(glehr2023_cd4_cd8_relative[, -1])
-            rroc_result(frontiers110_tcell_relative__permutation_10k)
-            return()
-        } else {
-            current_data(
-                data.table::fread(
-                    input$uploadfile$datapath,
-                    sep = input$csv_sep, dec = input$csv_dec,
-                    nrows = ifelse(is.numeric(input$data_n_max), input$data_n_max, Inf)
-                ) |>
-                    tibble::as_tibble()
-            )
-        }
-    })
-}
-
-
-#' Observe clipboard data
-#'
-#' @param input Shiny input object
-#' @param current_data Reactive value for current data
-observe_clipboard_data <- function(input, current_data) {
-    observeEvent(input$loadClipData, {
-        if (input$clipboard_groupA == "" || input$clipboard_groupB == "") {
-            return()
-        }
-        if (!any(grepl("\n", input$clipboard_groupA)) || !any(grepl("\n", input$clipboard_groupB))) {
-            return()
-        }
-        data_A <- readr::read_csv(input$clipboard_groupA, show_col_types = FALSE, col_names = FALSE)
-        data_B <- readr::read_csv(input$clipboard_groupB, show_col_types = FALSE, col_names = FALSE)
-
-        df <- list(data_A, data_B)
-        names(df) <- c("group_A", "group_B")
-        df_long <- data.table::rbindlist(df, idcol = "group")
-        colnames(df_long) <- c("group", "value")
-        current_data(df_long)
-    })
-}
-
-#' Observe DV and IV selection
-#'
-#' @param input Shiny input object
-#' @param session Shiny session object
-#' @param dv_selector Reactive value for DV selector
-#' @param iv_selector Reactive value for IV selector
-#' @param all_cols Reactive value for all columns
-observe_dv_iv_selection <- function(input, session, dv_selector, iv_selector, all_cols) {
-    observeEvent(input$dv_DEselect_all, {
-        dv_selector(!dv_selector())
-        if (dv_selector() == "FALSE") {
-            updateSelectInput(session, "dependent_vars", selected = character(0))
-        } else {
-            updateSelectInput(session, "dependent_vars", selected = all_cols())
-        }
-    })
-    observeEvent(input$iv_DEselect_all, {
-        iv_selector(!iv_selector())
-        if (iv_selector() == "FALSE") {
-            updateSelectInput(session, "independent_vars", selected = character(0))
-        } else {
-            updateSelectInput(session, "independent_vars", selected = all_cols()[!all_cols() %in% input$dependent_vars])
-        }
-    })
-}
-
-
 #' Observe RROC calculation
 #'
 #' @param input Shiny input object

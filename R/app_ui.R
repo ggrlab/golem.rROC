@@ -45,8 +45,8 @@ app_ui <- function(request) {
                 tabPanel(
                     "New Data",
                     sidebarLayout(
-                        sidebarPanel = shiny::fluidPage(),
-                        mainPanel = previewDataUI("preview")
+                        sidebarPanel = sidebarPanel(newDataUI("newdata"), width = 3),
+                        mainPanel = mainPanel(previewDataUI("preview"))
                     )
                 ),
                 # tabPanel(
