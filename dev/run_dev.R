@@ -11,7 +11,7 @@ golem::detach_all_attached()
 # Document and reload your package
 golem::document_and_reload()
 
-options(shiny.autoreload = TRUE)
+# options(shiny.autoreload = TRUE)
 
 # # Run the application
 print(run_app(options = list(port = 9207)))
