@@ -12,6 +12,8 @@ golem::detach_all_attached()
 golem::document_and_reload()
 
 # options(shiny.autoreload = TRUE)
+library(future)
+plan(multisession, workers = 2)
 
 # # Run the application
 print(run_app(options = list(port = 9207)))
