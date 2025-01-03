@@ -22,7 +22,9 @@ simpleET_server <- function(id, a, b) {
     rand_task <- ExtendedTask$new(function(f_a, f_b, ...) {
         # Get all arguments and ensure that they are NOT reactive. Necessary for ExtendedTask
         argg <- c(as.list(environment()), list(...))
-        lapply(argg, function(x){stopifnot(!is.reactive(x))})
+        lapply(argg, function(x) {
+            stopifnot(!is.reactive(x))
+        })
 
         future::future(
             {
@@ -46,6 +48,7 @@ simpleET_server <- function(id, a, b) {
         output$output_et <- renderText({
             paste0("Output is '", rand_task$result(), "'")
         })
+        
     })
 }
 
@@ -60,7 +63,7 @@ observe_simple <- function(input, output, exttask, a, b) {
         #     detail = "",
         #     value = 0,
         #     {
-                exttask$invoke(a(), b())
+        exttask$invoke(a(), b())
         #     })
     })
 }
