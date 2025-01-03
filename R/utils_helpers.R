@@ -11,7 +11,7 @@ rroc_secure <- function(df,
                         independent_vars,
                         n_permutations,
                         positive_label,
-                        shiny_progress = FALSE,
+                        show_progress = TRUE,
                         ...) {
     # 1. Check that dependent_vars has two levels
     checked_dv <- sapply(dependent_vars, function(dv_x) {
@@ -40,18 +40,21 @@ rroc_secure <- function(df,
     }
 
     ### Actually calculate the ROC
-    total_calculations <- length(checked_dependent_vars) * length(checked_independent_vars)
+    if (show_progress) {
+        total_calculations <- length(checked_dependent_vars) * length(checked_independent_vars)
+        p <- progressr::progressor(steps = total_calculations)
+    }
     reslist <- sapply(dependent_vars, function(dv_x) {
         sapply(independent_vars, function(iv_x) {
             if (dv_x %in% checked_dependent_vars && iv_x %in% checked_independent_vars) {
-                if (shiny_progress) {
-                    shiny::incProgress(
-                        amount = 1 / total_calculations,
-                        detail = paste0("Calculating ROC for ", dv_x, " and ", iv_x)
-                    )
+                if (show_progress) {
+                    # shiny::incProgress(
+                    #     amount = 1 / total_calculations,
+                    #     detail = paste0("Calculating ROC for ", dv_x, " and ", iv_x)
+                    # )
+                    p(paste0("Calculating ROC for ", dv_x, " and ", iv_x))
                 }
                 rroc_res <- restrictedROC::rROC(
-                    # rroc_res <- rROC(
                     x = df,
                     dependent_vars = dv_x,
                     independent_vars = iv_x,

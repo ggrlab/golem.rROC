@@ -5,6 +5,7 @@
 #' @import shiny
 #' @noRd
 app_server <- function(input, output, session) {
+    options(progressr.enable = TRUE)
     # https://rstudio.github.io/shiny/reference/ExtendedTask.html
     #### Initialize reactives
     current_data <- reactiveVal()
