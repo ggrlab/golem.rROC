@@ -6,7 +6,13 @@
 #'
 #' @noRd
 
-rroc_secure <- function(df, dependent_vars, independent_vars, n_permutations, positive_label, ...) {
+rroc_secure <- function(df,
+                        dependent_vars,
+                        independent_vars,
+                        n_permutations,
+                        positive_label,
+                        shiny_progress = FALSE,
+                        ...) {
     # 1. Check that dependent_vars has two levels
     checked_dv <- sapply(dependent_vars, function(dv_x) {
         if (length(unique(df[[dv_x]][!is.na(df[[dv_x]])])) != 2) {
@@ -38,16 +44,20 @@ rroc_secure <- function(df, dependent_vars, independent_vars, n_permutations, po
     reslist <- sapply(dependent_vars, function(dv_x) {
         sapply(independent_vars, function(iv_x) {
             if (dv_x %in% checked_dependent_vars && iv_x %in% checked_independent_vars) {
-                shiny::incProgress(amount = 1 / total_calculations, detail = paste0("Calculating ROC for ", dv_x, " and ", iv_x))
+                if (shiny_progress) {
+                    shiny::incProgress(
+                        amount = 1 / total_calculations,
+                        detail = paste0("Calculating ROC for ", dv_x, " and ", iv_x)
+                    )
+                }
                 rroc_res <- restrictedROC::rROC(
                     # rroc_res <- rROC(
                     x = df,
                     dependent_vars = dv_x,
                     independent_vars = iv_x,
-                    do_plots = TRUE,
                     n_permutations = max(n_permutations, 0),
                     positive_label = positive_label,
-                    parallel_permutations = FALSE
+                    ...
                 )[[1]][[1]]
             } else {
                 rroc_res <- NA
