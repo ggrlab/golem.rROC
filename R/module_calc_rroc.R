@@ -12,8 +12,7 @@ calc_rroc_ui <- function(id) {
         numericInput(
             inputId = ns("n_permutations"),
             label = "Number of permutations:",
-            value = 4, 
-            # value = 40, 
+            value = 4,
             min = 0, max = 1000, step = 1
         ),
         uiOutput(ns("ui_positive_labels")),
@@ -98,7 +97,6 @@ rroc_ui_selection <- function(id, input, output, all_cols, possible_positive_lab
             inputId = NS(id, "dependent_vars"),
             label = "Dependent variables:",
             choices = all_cols(),
-            # selected = input$dependent_vars,
             multiple = TRUE,
             size = min(10, length(all_cols())),
             selectize = FALSE
@@ -131,8 +129,7 @@ observe_rroc_calculation <- function(input, output, data00, rroc_results, possib
     stopifnot(is.reactive(possible_positive_labels))
 
     observeEvent(input$run_rroc, {
-        # shiny::withProgress(
-        progressr::withProgressShiny(
+        shiny::withProgress(
             message = "Calculating restriction...",
             detail = "",
             value = 0,
@@ -151,9 +148,8 @@ observe_rroc_calculation <- function(input, output, data00, rroc_results, possib
                 if (input$positive_label != "") {
                     pos_label <- input$positive_label
                 }
-
-                # future::future(
-                #     {
+                promises::future_promise(
+                    {
                         calc_rroc_helper(
                             dvs,
                             ivs,
@@ -163,9 +159,12 @@ observe_rroc_calculation <- function(input, output, data00, rroc_results, possib
                             input$n_permutations,
                             input$recalculate_rroc
                         )
-                #     },
-                #     seed = TRUE
-                # )
+                    },
+                    seed = TRUE
+                ) |> promises::then(invisible())
+                shiny::setProgress(0)
+                # Return something other than the future so we don't block the UI
+                return(NULL)
             }
         )
     })
@@ -211,13 +210,15 @@ calc_rroc_helper <- function(dvs,
                              rroc_results,
                              data00,
                              n_permutations,
-                             recalculate_rroc) {
+                             recalculate_rroc
+                             #  progress_calculation
+) {
     # Check input types
+    stopifnot(is.reactive(rroc_results))
+    stopifnot(is.reactive(data00))
     stopifnot(is.character(dvs))
     stopifnot(is.character(ivs))
     stopifnot(is.character(positive_label))
-    stopifnot(is.reactive(rroc_results))
-    stopifnot(is.reactive(data00))
     stopifnot(is.numeric(n_permutations))
     stopifnot(is.logical(recalculate_rroc))
 
@@ -230,7 +231,7 @@ calc_rroc_helper <- function(dvs,
             do_plots = TRUE,
             n_permutations = max(n_permutations, 0),
             positive_label = positive_label,
-            parallel_permutations = FALSE
+            parallel_permutations = FALSE,
         )
     } else {
         # Determine new combinations to calculate based on recalculate_rroc flag
@@ -242,7 +243,7 @@ calc_rroc_helper <- function(dvs,
                 ivs[!ivs %in% dvs_ivs_existing[[dv_x]]]
             }, simplify = FALSE)
         }
-
+        total_calculations <- length(unlist(new_dv_iv))
         # Calculate RROC for new combinations
         rroc_res_tmp <- sapply(names(new_dv_iv), function(dv_x) {
             if (length(new_dv_iv[[dv_x]]) == 0) {
@@ -257,7 +258,8 @@ calc_rroc_helper <- function(dvs,
                         do_plots = TRUE,
                         n_permutations = max(n_permutations, 0),
                         positive_label = positive_label,
-                        parallel_permutations = FALSE
+                        parallel_permutations = FALSE,
+                        total_calculations = total_calculations
                     )[[dv_x]][[iv_x]]
                 )
             }, simplify = FALSE)
@@ -266,7 +268,7 @@ calc_rroc_helper <- function(dvs,
         rroc_res_tmp <- rroc_res_tmp[!all(is.null(rroc_res_tmp))]
     }
 
-    # Update rroc_results with new calculations
+    # Update rroc_results() with new calculations
     if (is.null(rroc_results())) {
         rroc_results(rroc_res_tmp)
     } else if (all(is.null(rroc_res_tmp)) || all(sapply(rroc_res_tmp, is.null))) {
