@@ -6,6 +6,7 @@
 #' @noRd
 app_server <- function(input, output, session) {
     options(progressr.enable = TRUE)
+
     # https://rstudio.github.io/shiny/reference/ExtendedTask.html
     #### Initialize reactives
     current_data <- reactiveVal()
@@ -13,8 +14,8 @@ app_server <- function(input, output, session) {
     current_data(glehr2023_cd4_cd8_relative[, -1])
 
     rroc_result <- reactiveVal()
-    # Initialize rroc_result with a small example
-    rroc_result(frontiers110_tcell_relative__permutation_10k_small)
+    # # Initialize rroc_result with a small example
+    # rroc_result(frontiers110_tcell_relative__permutation_10k_small)
 
     #### Initialize shared data
     r_data <- initialize_shared_data()
@@ -37,6 +38,9 @@ app_server <- function(input, output, session) {
         rroc_selector$listen_iv_dv_first,
         rroc_selector$positive_label
     )
+    a <- reactiveVal()
+    b <- reactiveVal()
+    simpleET_server("simpleET", a, b)
 }
 
 #' Initialize shared data

@@ -12,6 +12,10 @@ app_ui <- function(request) {
             tabsetPanel(
                 id = "tabs_restriction",
                 tabPanel(
+                    "Testing ExtendedTask",
+                    simpleET_ui("simpleET")
+                ),
+                tabPanel(
                     "Restriction",
                     sidebarLayout(
                         sidebarPanel(
