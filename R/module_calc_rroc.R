@@ -32,8 +32,20 @@ calc_rroc_server <- function(id, data00, rroc_results) {
         names(data00())
     })
     moduleServer(id, function(input, output, session) {
-        rroc_task <- shiny::ExtendedTask$new(calc_rroc_helper_nonreactive)
-        bslib::bind_task_button(rroc_task, "recalculate")
+        rroc_task <- shiny::ExtendedTask$new(function(...){
+            mirai::mirai(
+                {
+                    calc_rroc_helper_nonreactive(
+                        ivs = ivs,
+                        dvs = dvs,
+                        positive_label = positive_label,
+                        rroc_results = rroc_results,
+                        data00 = data00,
+                        n_permutations = n_permutations,
+                        recalculate_rroc = recalculate_rroc
+                    )
+                }
+            )}) |> bslib::bind_task_button("button_run_rroc")
         # Selector UI
         possible_positive_labels <- reactive({
             if (length(input$dependent_vars) != 1) {
@@ -152,15 +164,14 @@ observe_rroc_calculation <- function(rroc_task, input, output, data00, rroc_resu
                     pos_label <- input$positive_label
                 }
                 rroc_task$invoke(
-                    dvs,
-                    ivs,
-                    pos_label,
-                    rroc_results(),
-                    data00(),
-                    input$n_permutations,
-                    input$recalculate_rroc
+                    dvs = dvs,
+                    ivs = ivs,
+                    positive_label = pos_label,
+                    rroc_results = rroc_results(),
+                    data00 = data00(),
+                    n_permutations = input$n_permutations,
+                    recalculate_rroc = input$recalculate_rroc
                 )
-                print("test")
                 # # promises::future_promise(
                 # #     {
                 # #         calc_rroc_helper(
@@ -179,6 +190,18 @@ observe_rroc_calculation <- function(rroc_task, input, output, data00, rroc_resu
                 # # Return something other than the future so we don't block the UI
                 # return(NULL)
             # })
+    })
+
+    observeEvent(rroc_task$status(), {
+        print(Sys.time())
+        cat(": ", "RROC calculation status: ")
+        print(str(rroc_task$status()))
+        if(rroc_task$status() == "succeeded") {
+            shiny::showNotification("RROC calculation finished", duration = 5)
+        } else if(rroc_task$status() == "failed") {
+            shiny::showNotification("RROC calculation failed", duration = 5)
+        }
+        rroc_task$result()
     })
 }
 
@@ -365,23 +388,5 @@ calc_rroc_helper_nonreactive <- function(dvs,
         rroc_res_tmp <- rroc_res_tmp[!all(is.null(rroc_res_tmp))]
     }
 
-    # # Update rroc_results with new calculations
-    # if (is.null(rroc_results)) {
-    #     rroc_results(rroc_res_tmp)
-    # } else if (all(is.null(rroc_res_tmp)) || all(sapply(rroc_res_tmp, is.null))) {
-    #     print("All results have been calculated before already")
-    # } else {
-    #     new_rroc <- rroc_results
-    #     for (dv_x in names(rroc_res_tmp)) {
-    #         if (!dv_x %in% names(rroc_results)) {
-    #             new_rroc[[dv_x]] <- rroc_res_tmp[[dv_x]]
-    #         } else {
-    #             for (iv_x in names(rroc_res_tmp[[dv_x]])) {
-    #                 new_rroc[[dv_x]][[iv_x]] <- rroc_res_tmp[[dv_x]][[iv_x]]
-    #             }
-    #         }
-    #     }
-    #     rroc_results(new_rroc)
-    # }
     return(rroc_res_tmp)
 }
