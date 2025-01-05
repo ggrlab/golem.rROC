@@ -1,5 +1,7 @@
 #' Run the Shiny Application
 #'
+#' @param n_daemons
+#' Number of daemons to run in parallel. Used by `mirai::daemons`.
 #' @param ... arguments to pass to golem_opts.
 #' See `?golem::get_golem_options` for more details.
 #' @inheritParams shiny::shinyApp
