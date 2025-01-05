@@ -32,20 +32,43 @@ calc_rroc_server <- function(id, data00, rroc_results) {
         names(data00())
     })
     moduleServer(id, function(input, output, session) {
-        rroc_task <- shiny::ExtendedTask$new(function(...){
-            mirai::mirai(
-                {
-                    calc_rroc_helper_nonreactive(
-                        ivs = ivs,
+        rroc_task <- shiny::ExtendedTask$new(
+            function(fun,
+                     rroc_fun,
+                     dvs,
+                     ivs,
+                     positive_label,
+                     rroc_results,
+                     data00,
+                     n_permutations,
+                     recalculate_rroc) {
+                mirai::mirai(
+                    fun(
+                        rroc_fun = rroc_fun,
                         dvs = dvs,
+                        ivs = ivs,
                         positive_label = positive_label,
                         rroc_results = rroc_results,
                         data00 = data00,
                         n_permutations = n_permutations,
                         recalculate_rroc = recalculate_rroc
-                    )
-                }
-            )}) |> bslib::bind_task_button("button_run_rroc")
+                    ),
+                    environment()
+                )
+                # mirai::mirai(
+                #     {
+                #         calc_rroc_helper_nonreactive(
+                #             ivs = ivs,
+                #             dvs = dvs,
+                #             positive_label = positive_label,
+                #             rroc_results = rroc_results,
+                #             data00 = data00,
+                #             n_permutations = n_permutations,
+                #             recalculate_rroc = recalculate_rroc
+                #         )
+                #     })
+            }
+        ) |> bslib::bind_task_button("button_run_rroc")
         # Selector UI
         possible_positive_labels <- reactive({
             if (length(input$dependent_vars) != 1) {
@@ -149,189 +172,213 @@ observe_rroc_calculation <- function(rroc_task, input, output, data00, rroc_resu
         #     detail = "",
         #     value = 0,
         #     {
-                dvs <- input$dependent_vars
-                ivs <- input$independent_vars
-                if (length(dvs) == 0) {
-                    warning("No dependent variable selected")
-                    return()
-                }
-                if (length(ivs) == 0) {
-                    warning("No independent variable selected")
-                    return()
-                }
-                pos_label <- 1
-                if (input$positive_label != "") {
-                    pos_label <- input$positive_label
-                }
-                rroc_task$invoke(
-                    dvs = dvs,
-                    ivs = ivs,
-                    positive_label = pos_label,
-                    rroc_results = rroc_results(),
-                    data00 = data00(),
-                    n_permutations = input$n_permutations,
-                    recalculate_rroc = input$recalculate_rroc
-                )
-                # # promises::future_promise(
-                # #     {
-                # #         calc_rroc_helper(
-                # #             dvs,
-                # #             ivs,
-                # #             pos_label,
-                # #             rroc_results,
-                # #             data00,
-                # #             input$n_permutations,
-                # #             input$recalculate_rroc
-                # #         )
-                # #     },
-                # #     seed = TRUE
-                # # ) |> promises::then(invisible())
-                # shiny::setProgress(0)
-                # # Return something other than the future so we don't block the UI
-                # return(NULL)
-            # })
+
+        # print(rroc_secure)
+        dvs <- input$dependent_vars
+        ivs <- input$independent_vars
+        if (length(dvs) == 0) {
+            warning("No dependent variable selected")
+            return()
+        }
+        if (length(ivs) == 0) {
+            warning("No independent variable selected")
+            return()
+        }
+        pos_label <- 1
+        if (input$positive_label != "") {
+            pos_label <- input$positive_label
+        }
+        rroc_task$invoke(
+            fun = calc_rroc_helper_nonreactive,
+            rroc_fun = rroc_secure,
+            dvs = dvs,
+            ivs = ivs,
+            positive_label = pos_label,
+            rroc_results = rroc_results(),
+            data00 = data00(),
+            n_permutations = input$n_permutations,
+            recalculate_rroc = input$recalculate_rroc
+        )
+        # # promises::future_promise(
+        # #     {
+        # #         calc_rroc_helper(
+        # #             dvs,
+        # #             ivs,
+        # #             pos_label,
+        # #             rroc_results,
+        # #             data00,
+        # #             input$n_permutations,
+        # #             input$recalculate_rroc
+        # #         )
+        # #     },
+        # #     seed = TRUE
+        # # ) |> promises::then(invisible())
+        # shiny::setProgress(0)
+        # # Return something other than the future so we don't block the UI
+        # return(NULL)
+        # })
     })
 
     observeEvent(rroc_task$status(), {
-        print(Sys.time())
-        cat(": ", "RROC calculation status: ")
-        print(str(rroc_task$status()))
-        if(rroc_task$status() == "succeeded") {
-            shiny::showNotification("RROC calculation finished", duration = 5)
-        } else if(rroc_task$status() == "failed") {
-            shiny::showNotification("RROC calculation failed", duration = 5)
+        ### just for debugging
+        # print(Sys.time())
+        # cat(": ", "RROC calculation status: ")
+        if (rroc_task$status() == "success") {
+            # print("RROC calculation finished")
+            # Update rroc_results() with new calculations
+            if (is.null(rroc_results())) {
+                rroc_results(rroc_task$result())
+            } else if (all(is.null(rroc_task$result())) || all(sapply(rroc_task$result(), is.null))) {
+                print("All results have been calculated before already")
+            } else {
+                new_rroc <- rroc_results()
+                for (dv_x in names(rroc_task$result())) {
+                    if (!dv_x %in% names(rroc_results())) {
+                        new_rroc[[dv_x]] <- rroc_task$result()[[dv_x]]
+                    } else {
+                        for (iv_x in names(rroc_task$result()[[dv_x]])) {
+                            new_rroc[[dv_x]][[iv_x]] <- rroc_task$result()[[dv_x]][[iv_x]]
+                        }
+                    }
+                }
+                rroc_results(new_rroc)
+            }
+        } else if (rroc_task$status() == "failed") {
+            print("RROC calculation failed")
+            stop(rroc_task$result())
         }
-        rroc_task$result()
     })
 }
 
-#' Helper function to calculate RROC (Receiver Operating Characteristic) curves
-#'
-#' This function calculates RROC curves for given dependent and independent variables.
-#' It supports recalculating RROC curves if needed.
-#'
-#' @param dvs A character vector of dependent variable names.
-#' @param ivs A character vector of independent variable names.
-#' @param positive_label A character string indicating the label for the positive class.
-#' @param rroc_results A reactive value containing the current RROC results.
-#' @param data00 A reactive value containing the data frame used for calculations.
-#' @param n_permutations A numeric value indicating the number of permutations to perform.
-#' @param recalculate_rroc A logical value indicating whether to recalculate RROC curves.
-#'
-#' @return Updates the reactive value `rroc_results` with new RROC calculations.
-#'
-#' @details
-#' The function first checks if `rroc_results` is NULL. If it is, it calculates the RROC curves
-#' for all combinations of dependent and independent variables. If `rroc_results` is not NULL,
-#' it either recalculates the RROC curves for all combinations or only for new combinations
-#' that have not been calculated before, based on the value of `recalculate_rroc`.
-#'
-#' @examples
-#' \dontrun{
-#' calc_rroc_helper(
-#'     dvs = c("dependent_var1", "dependent_var2"),
-#'     ivs = c("independent_var1", "independent_var2"),
-#'     positive_label = "positive",
-#'     rroc_results = reactiveVal(NULL),
-#'     data00 = reactiveVal(data.frame()),
-#'     n_permutations = 100,
-#'     recalculate_rroc = TRUE
-#' )
-#' }
-#'
-calc_rroc_helper <- function(dvs,
-                             ivs,
-                             positive_label,
-                             rroc_results,
-                             data00,
-                             n_permutations,
-                             recalculate_rroc
-                             #  progress_calculation
-) {
-    # Check input types
-    stopifnot(is.reactive(rroc_results))
-    stopifnot(is.reactive(data00))
-    stopifnot(is.character(dvs))
-    stopifnot(is.character(ivs))
-    stopifnot(is.character(positive_label))
-    stopifnot(is.numeric(n_permutations))
-    stopifnot(is.logical(recalculate_rroc))
+# #' Helper function to calculate RROC (Receiver Operating Characteristic) curves
+# #'
+# #' This function calculates RROC curves for given dependent and independent variables.
+# #' It supports recalculating RROC curves if needed.
+# #'
+# #' @param dvs A character vector of dependent variable names.
+# #' @param ivs A character vector of independent variable names.
+# #' @param positive_label A character string indicating the label for the positive class.
+# #' @param rroc_results A reactive value containing the current RROC results.
+# #' @param data00 A reactive value containing the data frame used for calculations.
+# #' @param n_permutations A numeric value indicating the number of permutations to perform.
+# #' @param recalculate_rroc A logical value indicating whether to recalculate RROC curves.
+# #'
+# #' @return Updates the reactive value `rroc_results` with new RROC calculations.
+# #'
+# #' @details
+# #' The function first checks if `rroc_results` is NULL. If it is, it calculates the RROC curves
+# #' for all combinations of dependent and independent variables. If `rroc_results` is not NULL,
+# #' it either recalculates the RROC curves for all combinations or only for new combinations
+# #' that have not been calculated before, based on the value of `recalculate_rroc`.
+# #'
+# #' @examples
+# #' \dontrun{
+# #' calc_rroc_helper(
+# #'     dvs = c("dependent_var1", "dependent_var2"),
+# #'     ivs = c("independent_var1", "independent_var2"),
+# #'     positive_label = "positive",
+# #'     rroc_results = reactiveVal(NULL),
+# #'     data00 = reactiveVal(data.frame()),
+# #'     n_permutations = 100,
+# #'     recalculate_rroc = TRUE
+# #' )
+# #' }
+# #'
+# calc_rroc_helper <- function(dvs,
+#                              ivs,
+#                              positive_label,
+#                              rroc_results,
+#                              data00,
+#                              n_permutations,
+#                              recalculate_rroc
+#                              #  progress_calculation
+# ) {
+#     # Check input types
+#     stopifnot(is.reactive(rroc_results))
+#     stopifnot(is.reactive(data00))
+#     stopifnot(is.character(dvs))
+#     stopifnot(is.character(ivs))
+#     stopifnot(is.character(positive_label))
+#     stopifnot(is.numeric(n_permutations))
+#     stopifnot(is.logical(recalculate_rroc))
 
-    # If rroc_results is NULL, calculate RROC for all combinations
-    if (is.null(rroc_results())) {
-        rroc_res_tmp <- rroc_secure(
-            df = data00(),
-            dependent_vars = dvs,
-            independent_vars = ivs,
-            do_plots = TRUE,
-            n_permutations = max(n_permutations, 0),
-            positive_label = positive_label,
-            parallel_permutations = FALSE,
-        )
-    } else {
-        # Determine new combinations to calculate based on recalculate_rroc flag
-        if (recalculate_rroc) {
-            new_dv_iv <- sapply(dvs, function(x) ivs, simplify = FALSE)
-        } else {
-            dvs_ivs_existing <- lapply(rroc_results(), names)
-            new_dv_iv <- sapply(dvs, function(dv_x) {
-                ivs[!ivs %in% dvs_ivs_existing[[dv_x]]]
-            }, simplify = FALSE)
-        }
-        total_calculations <- length(unlist(new_dv_iv))
-        # Calculate RROC for new combinations
-        rroc_res_tmp <- sapply(names(new_dv_iv), function(dv_x) {
-            if (length(new_dv_iv[[dv_x]]) == 0) {
-                return(NULL)
-            }
-            tmp <- sapply(new_dv_iv[[dv_x]], function(iv_x) {
-                return(
-                    rroc_secure(
-                        df = data00(),
-                        dependent_vars = dv_x,
-                        independent_vars = iv_x,
-                        do_plots = TRUE,
-                        n_permutations = max(n_permutations, 0),
-                        positive_label = positive_label,
-                        parallel_permutations = FALSE,
-                        total_calculations = total_calculations
-                    )[[dv_x]][[iv_x]]
-                )
-            }, simplify = FALSE)
-            return(tmp)
-        }, simplify = FALSE)
-        rroc_res_tmp <- rroc_res_tmp[!all(is.null(rroc_res_tmp))]
-    }
+#     # If rroc_results is NULL, calculate RROC for all combinations
+#     if (is.null(rroc_results())) {
+#         rroc_res_tmp <- rroc_secure(
+#             df = data00(),
+#             dependent_vars = dvs,
+#             independent_vars = ivs,
+#             do_plots = TRUE,
+#             n_permutations = max(n_permutations, 0),
+#             positive_label = positive_label,
+#             parallel_permutations = FALSE,
+#         )
+#     } else {
+#         # Determine new combinations to calculate based on recalculate_rroc flag
+#         if (recalculate_rroc) {
+#             new_dv_iv <- sapply(dvs, function(x) ivs, simplify = FALSE)
+#         } else {
+#             dvs_ivs_existing <- lapply(rroc_results(), names)
+#             new_dv_iv <- sapply(dvs, function(dv_x) {
+#                 ivs[!ivs %in% dvs_ivs_existing[[dv_x]]]
+#             }, simplify = FALSE)
+#         }
+#         total_calculations <- length(unlist(new_dv_iv))
+#         # Calculate RROC for new combinations
+#         rroc_res_tmp <- sapply(names(new_dv_iv), function(dv_x) {
+#             if (length(new_dv_iv[[dv_x]]) == 0) {
+#                 return(NULL)
+#             }
+#             tmp <- sapply(new_dv_iv[[dv_x]], function(iv_x) {
+#                 return(
+#                     rroc_secure(
+#                         df = data00(),
+#                         dependent_vars = dv_x,
+#                         independent_vars = iv_x,
+#                         do_plots = TRUE,
+#                         n_permutations = max(n_permutations, 0),
+#                         positive_label = positive_label,
+#                         parallel_permutations = FALSE,
+#                         total_calculations = total_calculations
+#                     )[[dv_x]][[iv_x]]
+#                 )
+#             }, simplify = FALSE)
+#             return(tmp)
+#         }, simplify = FALSE)
+#         rroc_res_tmp <- rroc_res_tmp[!all(is.null(rroc_res_tmp))]
+#     }
 
-    # Update rroc_results() with new calculations
-    if (is.null(rroc_results())) {
-        rroc_results(rroc_res_tmp)
-    } else if (all(is.null(rroc_res_tmp)) || all(sapply(rroc_res_tmp, is.null))) {
-        print("All results have been calculated before already")
-    } else {
-        new_rroc <- rroc_results()
-        for (dv_x in names(rroc_res_tmp)) {
-            if (!dv_x %in% names(rroc_results())) {
-                new_rroc[[dv_x]] <- rroc_res_tmp[[dv_x]]
-            } else {
-                for (iv_x in names(rroc_res_tmp[[dv_x]])) {
-                    new_rroc[[dv_x]][[iv_x]] <- rroc_res_tmp[[dv_x]][[iv_x]]
-                }
-            }
-        }
-        rroc_results(new_rroc)
-    }
-}
+#     # Update rroc_results() with new calculations
+#     if (is.null(rroc_results())) {
+#         rroc_results(rroc_res_tmp)
+#     } else if (all(is.null(rroc_res_tmp)) || all(sapply(rroc_res_tmp, is.null))) {
+#         print("All results have been calculated before already")
+#     } else {
+#         new_rroc <- rroc_results()
+#         for (dv_x in names(rroc_res_tmp)) {
+#             if (!dv_x %in% names(rroc_results())) {
+#                 new_rroc[[dv_x]] <- rroc_res_tmp[[dv_x]]
+#             } else {
+#                 for (iv_x in names(rroc_res_tmp[[dv_x]])) {
+#                     new_rroc[[dv_x]][[iv_x]] <- rroc_res_tmp[[dv_x]][[iv_x]]
+#                 }
+#             }
+#         }
+#         rroc_results(new_rroc)
+#     }
+# }
 
 
-calc_rroc_helper_nonreactive <- function(dvs,
-                             ivs,
-                             positive_label,
-                             rroc_results,
-                             data00,
-                             n_permutations,
-                             recalculate_rroc
-                             #  progress_calculation
+calc_rroc_helper_nonreactive <- function(
+    rroc_fun,
+    dvs,
+                                         ivs,
+                                         positive_label,
+                                         rroc_results,
+                                         data00,
+                                         n_permutations,
+                                         recalculate_rroc
+                                         #  progress_calculation
 ) {
     # Check input types
     stopifnot(!is.reactive(rroc_results))
@@ -342,17 +389,18 @@ calc_rroc_helper_nonreactive <- function(dvs,
     stopifnot(is.numeric(n_permutations))
     stopifnot(is.logical(recalculate_rroc))
 
-    # If rroc_results is NULL, calculate RROC for all combinations
+    rroc_res_tmp <- list()
+    # # If rroc_results is NULL, calculate RROC for all combinations
     if (is.null(rroc_results)) {
-        rroc_res_tmp <- rroc_secure(
-            df = data00,
-            dependent_vars = dvs,
-            independent_vars = ivs,
-            do_plots = TRUE,
-            n_permutations = max(n_permutations, 0),
-            positive_label = positive_label,
-            parallel_permutations = FALSE,
-        )
+    rroc_res_tmp <- rroc_fun(
+        df = data00,
+        dependent_vars = dvs,
+        independent_vars = ivs,
+        do_plots = TRUE,
+        n_permutations = max(n_permutations, 0),
+        positive_label = positive_label,
+        parallel_permutations = FALSE
+    )
     } else {
         # Determine new combinations to calculate based on recalculate_rroc flag
         if (recalculate_rroc) {
@@ -371,7 +419,7 @@ calc_rroc_helper_nonreactive <- function(dvs,
             }
             tmp <- sapply(new_dv_iv[[dv_x]], function(iv_x) {
                 return(
-                    rroc_secure(
+                    rroc_fun(
                         df = data00,
                         dependent_vars = dv_x,
                         independent_vars = iv_x,
