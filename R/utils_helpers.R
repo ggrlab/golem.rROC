@@ -11,7 +11,7 @@ rroc_secure <- function(df,
                         independent_vars,
                         n_permutations,
                         positive_label,
-                        show_progress = TRUE,
+                        show_progress = FALSE,
                         total_calculations = NULL,
                         ...) {
     # 1. Check that dependent_vars has two levels
@@ -44,7 +44,6 @@ rroc_secure <- function(df,
     if (show_progress && is.null(total_calculations)) {
         total_calculations <- length(checked_dependent_vars) * length(checked_independent_vars)
     }
-
     reslist <- sapply(dependent_vars, function(dv_x) {
         sapply(independent_vars, function(iv_x) {
             if (dv_x %in% checked_dependent_vars && iv_x %in% checked_independent_vars) {
