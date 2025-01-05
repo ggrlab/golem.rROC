@@ -11,10 +11,6 @@ app_ui <- function(request) {
         fluidPage(
             tabsetPanel(
                 id = "tabs_restriction",
-                # tabPanel(
-                #     "Testing ExtendedTask",
-                #     simpleET_ui("simpleET")
-                # ),
                 tabPanel(
                     "Restriction",
                     sidebarLayout(

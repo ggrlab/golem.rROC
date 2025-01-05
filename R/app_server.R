@@ -5,8 +5,6 @@
 #' @import shiny
 #' @noRd
 app_server <- function(input, output, session) {
-    options(progressr.enable = TRUE)
-
     # https://rstudio.github.io/shiny/reference/ExtendedTask.html
     #### Initialize reactives
     current_data <- reactiveVal()
@@ -38,9 +36,6 @@ app_server <- function(input, output, session) {
         rroc_selector$listen_iv_dv_first,
         rroc_selector$positive_label
     )
-    a <- reactiveVal()
-    b <- reactiveVal()
-    simpleET_server("simpleET", a, b)
 }
 
 #' Initialize shared data
